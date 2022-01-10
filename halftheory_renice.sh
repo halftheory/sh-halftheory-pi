@@ -29,7 +29,6 @@ if [ $1 ]; then
 				echo "> $1 is now top priority..."
 			fi
 		fi
-		#echo $LAST_PID
 		sleep 60
 	done;
 fi
