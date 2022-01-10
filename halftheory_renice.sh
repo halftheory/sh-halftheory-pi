@@ -8,6 +8,13 @@
 # sudo crontab -e
 # @reboot halftheory_renice [process] > /dev/null 2>&1
 
+# usage
+if [ -z $1 ]; then
+    BASENAME=`basename $0`
+    echo "> Usage: sudo $BASENAME [process]"
+    exit 1
+fi
+
 if [ $1 ]; then
 	LAST_PID=0
 	echo "> Listening for $1..."
@@ -25,6 +32,4 @@ if [ $1 ]; then
 		#echo $LAST_PID
 		sleep 60
 	done;
-else
-	echo "> Usage: sudo $0 [process]"
 fi
