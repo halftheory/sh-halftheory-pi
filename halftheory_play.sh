@@ -15,8 +15,7 @@ fi
 if [ -f "$DIRNAME/halftheory_functions.sh" ]; then
 	. $DIRNAME/halftheory_functions.sh
 else
-    BASENAME=`basename $0`
-	echo "Error in $BASENAME on line $LINENO. Exiting..."
+	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1
 fi
 
@@ -30,20 +29,19 @@ fi
 CMD_FFPLAY="ffplay -hide_banner -v quiet -fs -fast -framedrop -infbuf -autoexit -exitonkeydown -fflags discardcorrupt $1"
 
 if which "cvlc"; then
-	CMD_TEST=`cvlc -b -o local --no-osd --timeout 5 $1 | grep -oP "unknown|unable|omx_err|ERROR|unrecognized"`
+	CMD_TEST=`cvlc -b -o local --no-osd --timeout 5 $1 | grep -oP "unknown|unable|ERROR|unrecognized"`
 	if [ ! "$CMD_TEST" = "" ] && which "ffplay"; then
 		$CMD_FFPLAY
 	fi
 else if which "omxplayer"; then
-	CMD_TEST=`omxplayer -b -o local --no-osd --timeout 5 $1 | grep -oP "unknown|unable|omx_err|ERROR|unrecognized"`
+	CMD_TEST=`omxplayer -b -o local --no-osd --timeout 5 $1 | grep -oP "unknown|unable|ERROR|unrecognized|omx_err"`
 	if [ ! "$CMD_TEST" = "" ] && which "ffplay"; then
 		$CMD_FFPLAY
 	fi
 else if which "ffplay"; then
 	$CMD_FFPLAY
 else
-    BASENAME=`basename $0`
-	echo "Error in $BASENAME on line $LINENO. Exiting..."
+	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1
 fi
 
