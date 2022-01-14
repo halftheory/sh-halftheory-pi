@@ -7,23 +7,40 @@ if [ -f "/etc/hostname" ]; then
 fi
 
 # functions
-function get_file_own()
+
+function check_remote_host()
 {
-    # FILE
+    # HOST
     if [ -z $1 ]; then
         return 1
     fi
-    if [ ! -e "$1" ]; then
+    CMD_TEST=`ping -c1 $1 2>&1 | grep cannot`
+    if [ ! "$CMD_TEST" = "" ]; then
         return 1
     fi
-    # TODO: check Linux/Darwin.
-    if [ "$HOSTNAME" = "localhost" ]; then
-        CMD_TEST=`stat -Lf '%Su' $1`
-    else
-        CMD_TEST=`stat -Lc %U $1`
-    fi
+    CMD_TEST=`ping -c1 $1 2>&1 | grep sendto`
     if [ ! "$CMD_TEST" = "" ]; then
-        echo $CMD_TEST
+        return 1
+    fi
+    return 0
+}
+
+function cmd_ssh()
+{
+    # [HOSTNAME]
+    MY_HOSTNAME="halftheory"
+    if [ $1 ]; then
+        MY_HOSTNAME=$1
+    fi
+    MY_HOST=$(get_var "SSH_HOST" "$MY_HOSTNAME")
+    MY_PORT=$(get_var "SSH_PORT" "$MY_HOSTNAME")
+    MY_USER=$(get_var "SSH_USER" "$MY_HOSTNAME")
+    MY_PASS=$(get_var "SSH_PASS" "$MY_HOSTNAME")
+    if [ ! "$MY_USER" = "" ] && [ ! "$MY_HOST" = "" ] && [ ! "$MY_PORT" = "" ]; then
+        echo "$(maybe_sshpass "$MY_PASS")ssh $MY_USER@$MY_HOST -p $MY_PORT"
+        return 0
+    elif [ ! "$MY_USER" = "" ] && [ ! "$MY_HOST" = "" ]; then
+        echo "$(maybe_sshpass "$MY_PASS")ssh $MY_USER@$MY_HOST"
         return 0
     fi
     return 1
@@ -51,37 +68,38 @@ function get_file_grp()
     return 1
 }
 
-function check_remote_host()
+function get_file_own()
 {
-    # HOST
+    # FILE
     if [ -z $1 ]; then
         return 1
     fi
-    CMD_TEST=`ping -c1 $1 2>&1 | grep cannot`
-    if [ ! "$CMD_TEST" = "" ]; then
+    if [ ! -e "$1" ]; then
         return 1
     fi
-    CMD_TEST=`ping -c1 $1 2>&1 | grep sendto`
-    if [ ! "$CMD_TEST" = "" ]; then
-        return 1
+    # TODO: check Linux/Darwin.
+    if [ "$HOSTNAME" = "localhost" ]; then
+        CMD_TEST=`stat -Lf '%Su' $1`
+    else
+        CMD_TEST=`stat -Lc %U $1`
     fi
-    return 0
+    if [ ! "$CMD_TEST" = "" ]; then
+        echo $CMD_TEST
+        return 0
+    fi
+    return 1
 }
 
-function set_local_owngrp()
+function is_int()
 {
-    if [ -z $0 ]; then
+    # VALUE
+    if [ -z $1 ]; then
         return 1
     fi
-    STR_TEST=$(get_file_own $0)
-    if [ ! "$STR_TEST" = "" ]; then
-        set_var "$HOSTNAME" "OWN_LOCAL" "$STR_TEST"
+    if [ "${1//[0-9]/}" = "" ]; then
+        return 0
     fi
-    STR_TEST=$(get_file_grp $0)
-    if [ ! "$STR_TEST" = "" ]; then
-        set_var "$HOSTNAME" "GRP_LOCAL" "$STR_TEST"
-    fi
-    return 0
+    return 1
 }
 
 function is_sudo()
@@ -92,20 +110,6 @@ function is_sudo()
         MY_USER=$1
     fi
     if [ "$MY_USER" = "root" ]; then
-        return 0
-    fi
-    return 1
-}
-
-function maybe_sudo()
-{
-    # [USER]
-    MY_USER=$(get_file_own $0)
-    if [ $1 ]; then
-        MY_USER=$1
-    fi
-    if ! is_sudo "$MY_USER"; then
-        echo "sudo "
         return 0
     fi
     return 1
@@ -126,22 +130,15 @@ function maybe_sshpass()
     return 1
 }
 
-function cmd_ssh()
+function maybe_sudo()
 {
-    # [HOSTNAME]
-    MY_HOSTNAME="halftheory"
+    # [USER]
+    MY_USER=$(get_file_own $0)
     if [ $1 ]; then
-        MY_HOSTNAME=$1
+        MY_USER=$1
     fi
-    MY_HOST=$(get_var "SSH_HOST" "$MY_HOSTNAME")
-    MY_PORT=$(get_var "SSH_PORT" "$MY_HOSTNAME")
-    MY_USER=$(get_var "SSH_USER" "$MY_HOSTNAME")
-    MY_PASS=$(get_var "SSH_PASS" "$MY_HOSTNAME")
-    if [ ! "$MY_USER" = "" ] && [ ! "$MY_HOST" = "" ] && [ ! "$MY_PORT" = "" ]; then
-        echo "$(maybe_sshpass "$MY_PASS")ssh $MY_USER@$MY_HOST -p $MY_PORT"
-        return 0
-    elif [ ! "$MY_USER" = "" ] && [ ! "$MY_HOST" = "" ]; then
-        echo "$(maybe_sshpass "$MY_PASS")ssh $MY_USER@$MY_HOST"
+    if ! is_sudo "$MY_USER"; then
+        echo "sudo "
         return 0
     fi
     return 1
@@ -168,16 +165,20 @@ function remote_file_exists()
     return 1
 }
 
-function is_int()
+function set_local_owngrp()
 {
-    # VALUE
-    if [ -z $1 ]; then
+    if [ -z $0 ]; then
         return 1
     fi
-    if [ "${1//[0-9]/}" = "" ]; then
-        return 0
+    STR_TEST=$(get_file_own $0)
+    if [ ! "$STR_TEST" = "" ]; then
+        set_var "$HOSTNAME" "OWN_LOCAL" "$STR_TEST"
     fi
-    return 1
+    STR_TEST=$(get_file_grp $0)
+    if [ ! "$STR_TEST" = "" ]; then
+        set_var "$HOSTNAME" "GRP_LOCAL" "$STR_TEST"
+    fi
+    return 0
 }
 
 function which()
