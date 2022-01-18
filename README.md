@@ -3,4 +3,4 @@ Common scripts to run on the Raspberry Pi.
 
 - config.
 - play.
-- renice.
+- renicer.
