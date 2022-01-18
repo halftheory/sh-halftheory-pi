@@ -1,156 +1,230 @@
 #!/bin/bash
 
-# install:
-# touch /home/pi/halftheory_config.sh
-# pico /home/pi/halftheory_config.sh
-# chmod +x /home/pi/halftheory_config.sh
-# sudo ln -s /home/pi/halftheory_config.sh /bin/halftheory_config
-# check for multiple "exit 0" strings in /etc/rc.local
-
-show_info=0
-
-if [ $1 ]; then
-	case $1 in
-		"audio")
-		echo "> Updating config..."
-		sudo sed -i.bak "/audio_pwm_mode=2/d" /boot/config.txt
-		case $2 in
-			"on")
-			sudo sed -i.bak 's/dtparam=audio=off/dtparam=audio=on/g' /boot/config.txt
-			echo "audio_pwm_mode=2" | sudo tee -a /boot/config.txt > /dev/null 2>&1
-			;;
-			"off")
-			sudo sed -i.bak 's/dtparam=audio=on/dtparam=audio=off/g' /boot/config.txt
-			;;
-		esac
-		echo "> $1 will be $2 after rebooting."
-		;;
-
-		"bluetooth")
-		echo "> Updating config..."
-		sudo sed -i.bak "/dtoverlay=pi3-disable-bt/d" /boot/config.txt
-		case $2 in
-			"on")
-			echo "> Enabling services..."
-			sudo systemctl enable bluetooth
-			sudo systemctl enable hciuart
-			;;
-			"off")
-			echo "> Disabling services..."
-			sudo systemctl disable bluetooth
-			sudo systemctl disable hciuart
-			echo "dtoverlay=pi3-disable-bt" | sudo tee -a /boot/config.txt > /dev/null 2>&1
-			;;
-		esac
-		echo "> $1 will be $2 after rebooting."
-		;;
-
-		"hdmi")
-		sudo sed -i.bak "/\/usr\/bin\/tvservice -o/d" /etc/rc.local
-		sudo sed -i.bak "/vcgencmd display_power 0/d" /etc/rc.local
-		case $2 in
-			"on")
-			sudo sed -i.bak 's/[#]*hdmi_force_hotplug=1/hdmi_force_hotplug=1/g' /boot/config.txt
-			sudo sed -i.bak 's/[#]*sdtv_mode=[0-9]*/#sdtv_mode=18/g' /boot/config.txt
-			vcgencmd display_power 1
-			/usr/bin/tvservice -p
-			;;
-			"off")
-			sudo sed -i.bak 's/[#]*hdmi_force_hotplug=1/#hdmi_force_hotplug=1/g' /boot/config.txt
-			sudo sed -i.bak 's/[#]*sdtv_mode=[0-9]*/#sdtv_mode=18/g' /boot/config.txt
-			/usr/bin/tvservice -o
-			vcgencmd display_power 0
-			sudo sed -i.bak 's/exit 0/\/usr\/bin\/tvservice -o\nexit 0/g' /etc/rc.local
-			sudo sed -i.bak 's/exit 0/vcgencmd display_power 0\nexit 0/g' /etc/rc.local
-			;;
-		esac
-		echo "> $1 is now $2. This will persist after rebooting."
-		;;
-
-		"pal")
-		sudo sed -i.bak "/\/usr\/bin\/tvservice -o/d" /etc/rc.local
-		sudo sed -i.bak "/vcgencmd display_power 0/d" /etc/rc.local
-		case $2 in
-			"on")
-			sudo sed -i.bak 's/[#]*sdtv_mode=[0-9]*/sdtv_mode=18/g' /boot/config.txt
-			sudo sed -i.bak 's/[#]*hdmi_force_hotplug=1/#hdmi_force_hotplug=1/g' /boot/config.txt
-			vcgencmd display_power 0
-			/usr/bin/tvservice -p
-			sudo sed -i.bak 's/exit 0/vcgencmd display_power 0\nexit 0/g' /etc/rc.local
-			;;
-			"off")
-			sudo sed -i.bak 's/[#]*sdtv_mode=[0-9]*/#sdtv_mode=18/g' /boot/config.txt
-			sudo sed -i.bak 's/[#]*hdmi_force_hotplug=1/hdmi_force_hotplug=1/g' /boot/config.txt
-			vcgencmd display_power 1
-			/usr/bin/tvservice -p
-			;;
-		esac
-		echo "> $1 is now $2. This will persist after rebooting."
-		;;
-
-		"network")
-		echo "> Updating config..."
-		sudo sed -i.bak "/dtoverlay=pi3-disable-wifi/d" /boot/config.txt
-		case $2 in
-			"on")
-			echo "> Enabling services..."
-			sudo systemctl enable networking
-			sudo systemctl enable ssh
-			sudo systemctl enable smbd
-			sudo systemctl enable nmbd
-			;;
-			"off")
-			echo "> Disabling services..."
-			sudo systemctl disable nmbd
-			sudo systemctl disable smbd
-			sudo systemctl disable ssh
-			sudo systemctl disable networking
-			echo "dtoverlay=pi3-disable-wifi" | sudo tee -a /boot/config.txt > /dev/null 2>&1
-			;;
-		esac
-		echo "> $1 is now $2. This will persist after rebooting."
-		;;
-
-		"firewall")
-		echo "> Reset firewall..."
-		sudo ufw logging off
-		sudo ufw --force reset
-		case $2 in
-			"on")
-			echo "> Enabling firewall..."
-			sudo ufw allow ssh
-			sudo ufw default allow incoming
-			sudo ufw default allow outgoing
-			sudo ufw deny ftp
-			sudo ufw deny http
-			sudo ufw deny https
-			sudo ufw deny imap
-			sudo ufw deny pop3
-			sudo ufw deny smtp
-			sudo ufw --force enable
-			;;
-			"off")
-			echo "> Disabling firewall..."
-			sudo ufw --force disable
-			;;
-		esac
-		echo "> $1 is now $2. This will persist after rebooting."
-		;;
-
-		*)
-		show_info=1
-		;;
-	esac
+# import vars
+DIRNAME=`dirname "$0"`
+CMD_TEST=`readlink "$0"`
+if [ ! "$CMD_TEST" = "" ]; then
+    DIRNAME=`dirname "$CMD_TEST"`
+fi
+if [ -f "$DIRNAME/halftheory_vars.sh" ]; then
+    . $DIRNAME/halftheory_vars.sh
 else
-	show_info=1
+	echo "Error in $0 on line $LINENO. Exiting..."
+    exit 1
 fi
 
-if [ $show_info = 1 ]; then
-	echo "Usage:"
-	echo "sudo $0 audio on|off"
-	echo "sudo $0 bluetooth on|off"
-	echo "sudo $0 hdmi on|off"
-	echo "sudo $0 pal on|off"
-	echo "sudo $0 network on|off"
-	echo "sudo $0 firewall on|off"
+SCRIPT_ALIAS="config"
+
+# usage
+if [ -z $1 ]; then
+    echo "> Usage: $MAYBE_SUDO$SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
+    exit 1
+# install
+elif [ "$1" = "-install" ]; then
+	FILE_SCRIPT=$0
+	CMD_TEST=`readlink "$0"`
+	if [ ! "$CMD_TEST" = "" ]; then
+	    FILE_SCRIPT=$CMD_TEST
+	fi
+	chmod $CHMOD_FILES $FILE_SCRIPT
+	chmod +x $FILE_SCRIPT
+	${MAYBE_SUDO}rm $DIR_SCRIPTS/$SCRIPT_ALIAS > /dev/null 2>&1
+	${MAYBE_SUDO}ln -s $FILE_SCRIPT $DIR_SCRIPTS/$SCRIPT_ALIAS
+	echo "> Installed."
+	exit 0
+# uninstall
+elif [ "$1" = "-uninstall" ]; then
+	${MAYBE_SUDO}rm $DIR_SCRIPTS/$SCRIPT_ALIAS > /dev/null 2>&1
+	echo "> Uninstalled."
+	exit 0
 fi
+
+if [ -z $2 ] || [[ ! "$2" = "on" ] && [ ! "$2" = "off" ]]; then
+	echo "Error in $0 on line $LINENO. Exiting..."
+    exit 1
+fi
+
+case $1 in
+	audio)
+    	FILESIZE=$(get_file_size "$FILE_CONFIG")
+		case $2 in
+			on)
+				if ! file_replace_line "$FILE_CONFIG" "dtparam=audio=off" "dtparam=audio=on" "sudo"; then
+					if file_contains_line "$FILE_CONFIG" "#dtparam=audio=on"; then
+						file_add_line "$FILE_CONFIG" "dtparam=audio=on" "sudo"
+					elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\ndtparam=audio=on" "sudo"; then
+						file_add_line "$FILE_CONFIG" "dtparam=audio=on" "sudo"
+					fi
+				fi
+				if file_contains_line "$FILE_CONFIG" "#audio_pwm_mode=2"; then
+					file_add_line "$FILE_CONFIG" "audio_pwm_mode=2" "sudo"
+				elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\naudio_pwm_mode=2" "sudo"; then
+					file_add_line "$FILE_CONFIG" "audio_pwm_mode=2" "sudo"
+				fi
+				;;
+			off)
+				if ! file_replace_line "$FILE_CONFIG" "dtparam=audio=on" "dtparam=audio=off" "sudo"; then
+					if file_contains_line "$FILE_CONFIG" "#dtparam=audio=off"; then
+						file_add_line "$FILE_CONFIG" "dtparam=audio=off" "sudo"
+					elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\ndtparam=audio=off" "sudo"; then
+						file_add_line "$FILE_CONFIG" "dtparam=audio=off" "sudo"
+					fi
+				fi
+				file_replace_line "$FILE_CONFIG" "(audio_pwm_mode=2)" "#\1" "sudo"
+				;;
+		esac
+		if [ ! $FILESIZE = $(get_file_size "$FILE_CONFIG") ]; then
+			echo "> Updated $(basename "$FILE_CONFIG")..."
+		fi
+		echo "> $1 will be $2 after rebooting."
+		;;
+
+	bluetooth)
+    	FILESIZE=$(get_file_size "$FILE_CONFIG")
+		case $2 in
+			on)
+				echo "> Enabling services..."
+				${MAYBE_SUDO}systemctl enable bluetooth
+				${MAYBE_SUDO}systemctl enable hciuart
+				file_replace_line "$FILE_CONFIG" "(dtoverlay=disable-bt)" "#\1" "sudo"
+				;;
+			off)
+				echo "> Disabling services..."
+				${MAYBE_SUDO}systemctl disable bluetooth
+				${MAYBE_SUDO}systemctl disable hciuart
+				if file_contains_line "$FILE_CONFIG" "#dtoverlay=disable-bt"; then
+					file_add_line "$FILE_CONFIG" "dtoverlay=disable-bt" "sudo"
+				elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\ndtoverlay=disable-bt" "sudo"; then
+					file_add_line "$FILE_CONFIG" "dtoverlay=disable-bt" "sudo"
+				fi
+				;;
+		esac
+		if [ ! $FILESIZE = $(get_file_size "$FILE_CONFIG") ]; then
+			echo "> Updated $(basename "$FILE_CONFIG")..."
+		fi
+		echo "> $1 will be $2 after rebooting."
+		;;
+
+	firewall)
+		if maybe_install "ufw"; then
+			echo "> Reseting firewall..."
+			${MAYBE_SUDO}ufw logging off
+			${MAYBE_SUDO}ufw --force reset
+			case $2 in
+				on)
+					echo "> Enabling firewall..."
+					${MAYBE_SUDO}ufw allow ssh
+					${MAYBE_SUDO}ufw default allow incoming
+					${MAYBE_SUDO}ufw default allow outgoing
+					${MAYBE_SUDO}ufw deny ftp
+					${MAYBE_SUDO}ufw deny http
+					${MAYBE_SUDO}ufw deny https
+					${MAYBE_SUDO}ufw deny imap
+					${MAYBE_SUDO}ufw deny pop3
+					${MAYBE_SUDO}ufw deny smtp
+					${MAYBE_SUDO}ufw --force enable
+					;;
+				off)
+					echo "> Disabling firewall..."
+					${MAYBE_SUDO}ufw --force disable
+					;;
+			esac
+			echo "> $1 is now $2. This will persist after rebooting."
+		fi
+		;;
+
+	hdmi)
+    	FILESIZE_CONFIG=$(get_file_size "$FILE_CONFIG")
+    	FILESIZE_RCLOCAL=$(get_file_size "$FILE_RCLOCAL")
+		case $2 in
+			on)
+				# hdmi_force_hotplug=1
+				if file_contains_line "$FILE_CONFIG" "#hdmi_force_hotplug=1"; then
+					file_add_line "$FILE_CONFIG" "hdmi_force_hotplug=1" "sudo"
+				elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\nhdmi_force_hotplug=1" "sudo"; then
+					file_add_line "$FILE_CONFIG" "hdmi_force_hotplug=1" "sudo"
+				fi
+				# comment sdtv_mode
+				file_replace_line "$FILE_CONFIG" "(sdtv_mode=[0-9]*)" "#\1" "sudo"
+				# rc.local
+				if is_which "vcgencmd"; then
+					file_replace_line "$FILE_RCLOCAL" "(vcgencmd display_power 0)" "#\1" "sudo"
+					vcgencmd display_power 1
+				fi
+				;;
+			off)
+				# comment hdmi_force_hotplug=1
+				file_replace_line "$FILE_CONFIG" "(hdmi_force_hotplug=1)" "#\1" "sudo"
+				# sdtv_mode=18
+    			if [ $(get_system) = "Darwin" ]; then
+					${MAYBE_SUDO}sed -i '' -E 's/sdtv_mode=[0-9]*/sdtv_mode=18/g' $FILE_CONFIG
+				else
+					${MAYBE_SUDO}sed -i -E 's/sdtv_mode=[0-9]*/sdtv_mode=18/g' $FILE_CONFIG
+				fi
+				if file_contains_line "$FILE_CONFIG" "#sdtv_mode=18"; then
+					file_add_line "$FILE_CONFIG" "sdtv_mode=18" "sudo"
+				elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\nsdtv_mode=18" "sudo"; then
+					file_add_line "$FILE_CONFIG" "sdtv_mode=18" "sudo"
+				fi
+				# rc.local
+				if is_which "vcgencmd"; then
+					if ! file_replace_line_last "$FILE_RCLOCAL" "(exit 0)" "vcgencmd display_power 0\n\1" "sudo"; then
+						file_add_line "$FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
+					fi
+					vcgencmd display_power 0
+				fi
+				;;
+		esac
+		# need for both hdmi and pal
+		if is_which "tvservice"; then
+			file_replace_line "$FILE_RCLOCAL" "(tvservice -o)" "#\1" "sudo"
+			if is_opengl_legacy; then
+				tvservice -p
+			fi
+		fi
+		if [ ! $FILESIZE_CONFIG = $(get_file_size "$FILE_CONFIG") ]; then
+			echo "> Updated $(basename "$FILE_CONFIG")..."
+		fi
+		if [ ! $FILESIZE_RCLOCAL = $(get_file_size "$FILE_RCLOCAL") ]; then
+			echo "> Updated $(basename "$FILE_RCLOCAL")..."
+		fi
+		echo "> $1 is now $2. This will persist after rebooting."
+		;;
+
+	network)
+    	FILESIZE=$(get_file_size "$FILE_CONFIG")
+		case $2 in
+			on)
+				echo "> Enabling services..."
+				${MAYBE_SUDO}systemctl enable networking
+				${MAYBE_SUDO}systemctl enable ssh
+				${MAYBE_SUDO}systemctl enable smbd
+				${MAYBE_SUDO}systemctl enable nmbd
+				file_replace_line "$FILE_CONFIG" "(dtoverlay=disable-wifi)" "#\1" "sudo"
+				;;
+			off)
+				echo "> Disabling services..."
+				${MAYBE_SUDO}systemctl disable nmbd
+				${MAYBE_SUDO}systemctl disable smbd
+				${MAYBE_SUDO}systemctl disable ssh
+				${MAYBE_SUDO}systemctl disable networking
+				if file_contains_line "$FILE_CONFIG" "#dtoverlay=disable-wifi"; then
+					file_add_line "$FILE_CONFIG" "dtoverlay=disable-wifi" "sudo"
+				elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\ndtoverlay=disable-wifi" "sudo"; then
+					file_add_line "$FILE_CONFIG" "dtoverlay=disable-wifi" "sudo"
+				fi
+				;;
+		esac
+		if [ ! $FILESIZE = $(get_file_size "$FILE_CONFIG") ]; then
+			echo "> Updated $(basename "$FILE_CONFIG")..."
+		fi
+		echo "> $1 is now $2. This will persist after rebooting."
+		;;
+
+	*)
+		echo "Error in $0 on line $LINENO. Exiting..."
+	    exit 1
+		;;
+esac
+
+exit 0
