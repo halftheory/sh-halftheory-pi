@@ -1,21 +1,22 @@
 #!/bin/bash
 
 # import vars
-DIRNAME=`dirname "$0"`
-CMD_TEST=`readlink "$0"`
+CMD_TEST="$(readlink "$0")"
 if [ ! "$CMD_TEST" = "" ]; then
-    DIRNAME=`dirname "$CMD_TEST"`
+	DIRNAME="$(dirname "$CMD_TEST")"
+else
+	DIRNAME="$(dirname "$0")"
 fi
 if [ -f "$DIRNAME/halftheory_vars.sh" ]; then
-    . $DIRNAME/halftheory_vars.sh
+	. $DIRNAME/halftheory_vars.sh
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
-    exit 1
+	exit 1
 fi
 
 # prompt to continue
 read -p "> Continue update? [y]: " PROMPT_TEST
-PROMPT_TEST=${PROMPT_TEST:-y}
+PROMPT_TEST="${PROMPT_TEST:-y}"
 if [ ! "$PROMPT_TEST" = "y" ]; then
 	exit 0
 fi
@@ -23,9 +24,7 @@ fi
 # functions
 function halftheory_uninstall()
 {
-	if [ -f "$DIRNAME/install.sh" ]; then
-		chmod $CHMOD_FILES $DIRNAME/install.sh
-		chmod +x $DIRNAME/install.sh
+	if script_install "$DIRNAME/install.sh"; then
 		$DIRNAME/install.sh -uninstall
 		return 0
 	fi
@@ -33,9 +32,7 @@ function halftheory_uninstall()
 }
 function halftheory_install()
 {
-	if [ -f "$DIRNAME/install.sh" ]; then
-		chmod $CHMOD_FILES $DIRNAME/install.sh
-		chmod +x $DIRNAME/install.sh
+	if script_install "$DIRNAME/install.sh"; then
 		$DIRNAME/install.sh
 		return 0
 	fi
