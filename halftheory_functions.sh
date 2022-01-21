@@ -753,11 +753,12 @@ function remote_file_exists()
 	if [ $5 ]; then
 		MY_PORT="$5"
 	fi
-	STR_TEST="$(cmd_ssh "$MY_HOST" "$MY_USER" "$MY_PASS" "$MY_PORT")"
-	if [ "$STR_TEST" = "" ]; then
+	CMD_SSH="$(cmd_ssh "$MY_HOST" "$MY_USER" "$MY_PASS" "$MY_PORT")"
+	if [ "$CMD_SSH" = "" ]; then
 		return 1
 	fi
-	CMD_TEST=`$STR_TEST "ls $MY_FILE 2>&1 | grep \"No such file\""`
+	CMD_TEST="$CMD_SSH \"ls $MY_FILE 2>&1 | grep 'No such file'\""
+    CMD_TEST="$(eval "$CMD_TEST")"
 	if [ ! "$CMD_TEST" = "" ]; then
 		return 1
 	fi
