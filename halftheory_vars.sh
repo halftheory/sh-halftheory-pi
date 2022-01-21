@@ -1,10 +1,11 @@
 #!/bin/bash
 
 # import functions
-DIRNAME=`dirname "$0"`
-CMD_TEST=`readlink "$0"`
+CMD_TEST="$(readlink "$0")"
 if [ ! "$CMD_TEST" = "" ]; then
-	DIRNAME=`dirname "$CMD_TEST"`
+	DIRNAME="$(dirname "$CMD_TEST")"
+else
+	DIRNAME="$(dirname "$0")"
 fi
 if [ -f "$DIRNAME/halftheory_functions.sh" ]; then
 	. $DIRNAME/halftheory_functions.sh
@@ -14,10 +15,10 @@ else
 fi
 
 # vars
-MAYBE_SUDO=$(maybe_sudo)
-OWN_LOCAL=$(whoami)
-GRP_LOCAL=$(get_file_grp $0)
-DIR_LOCAL=$(get_user_dir "$OWN_LOCAL")
+MAYBE_SUDO="$(maybe_sudo)"
+OWN_LOCAL="$(whoami)"
+GRP_LOCAL="$(get_file_grp "$0")"
+DIR_LOCAL="$(get_user_dir "$OWN_LOCAL")"
 CHMOD_DIRS="755"
 CHMOD_FILES="644"
 CHMOD_UPLOADS="777"

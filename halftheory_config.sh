@@ -1,53 +1,54 @@
 #!/bin/bash
 
 # import vars
-DIRNAME=`dirname "$0"`
-CMD_TEST=`readlink "$0"`
+CMD_TEST="$(readlink "$0")"
 if [ ! "$CMD_TEST" = "" ]; then
-    DIRNAME=`dirname "$CMD_TEST"`
+	DIRNAME="$(dirname "$CMD_TEST")"
+else
+	DIRNAME="$(dirname "$0")"
 fi
 if [ -f "$DIRNAME/halftheory_vars.sh" ]; then
-    . $DIRNAME/halftheory_vars.sh
+	. $DIRNAME/halftheory_vars.sh
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
-    exit 1
+	exit 1
 fi
 
 SCRIPT_ALIAS="config"
 
 # usage
 if [ -z $1 ]; then
-    echo "> Usage: $MAYBE_SUDO$SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
-    exit 1
+	echo "> Usage: $MAYBE_SUDO$SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
+	exit 1
 # install
 elif [ "$1" = "-install" ]; then
-	FILE_SCRIPT=$0
-	CMD_TEST=`readlink "$0"`
-	if [ ! "$CMD_TEST" = "" ]; then
-	    FILE_SCRIPT=$CMD_TEST
+	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
+		echo "> Installed."
+		exit 0
+	else
+		echo "Error in $0 on line $LINENO. Exiting..."
+		exit 1
 	fi
-	chmod $CHMOD_FILES $FILE_SCRIPT
-	chmod +x $FILE_SCRIPT
-	${MAYBE_SUDO}rm $DIR_SCRIPTS/$SCRIPT_ALIAS > /dev/null 2>&1
-	${MAYBE_SUDO}ln -s $FILE_SCRIPT $DIR_SCRIPTS/$SCRIPT_ALIAS
-	echo "> Installed."
-	exit 0
 # uninstall
 elif [ "$1" = "-uninstall" ]; then
-	${MAYBE_SUDO}rm $DIR_SCRIPTS/$SCRIPT_ALIAS > /dev/null 2>&1
-	echo "> Uninstalled."
-	exit 0
+	if script_uninstall "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
+		echo "> Uninstalled."
+		exit 0
+	else
+		echo "Error in $0 on line $LINENO. Exiting..."
+		exit 1
+	fi
 fi
 
-if [ -z $2 ] || [[ ! "$2" = "on" ] && [ ! "$2" = "off" ]]; then
-	echo "Error in $0 on line $LINENO. Exiting..."
-    exit 1
+if [ ! "$2" = "on" ] && [ ! "$2" = "off" ]; then
+	echo "> Usage: $MAYBE_SUDO$SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
+	exit 1
 fi
 
-case $1 in
+case "$1" in
 	audio)
-    	FILESIZE=$(get_file_size "$FILE_CONFIG")
-		case $2 in
+		FILESIZE="$(get_file_size "$FILE_CONFIG")"
+		case "$2" in
 			on)
 				if ! file_replace_line "$FILE_CONFIG" "dtparam=audio=off" "dtparam=audio=on" "sudo"; then
 					if file_contains_line "$FILE_CONFIG" "#dtparam=audio=on"; then
@@ -73,15 +74,15 @@ case $1 in
 				file_replace_line "$FILE_CONFIG" "(audio_pwm_mode=2)" "#\1" "sudo"
 				;;
 		esac
-		if [ ! $FILESIZE = $(get_file_size "$FILE_CONFIG") ]; then
+		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
 			echo "> Updated $(basename "$FILE_CONFIG")..."
 		fi
 		echo "> $1 will be $2 after rebooting."
 		;;
 
 	bluetooth)
-    	FILESIZE=$(get_file_size "$FILE_CONFIG")
-		case $2 in
+		FILESIZE="$(get_file_size "$FILE_CONFIG")"
+		case "$2" in
 			on)
 				echo "> Enabling services..."
 				${MAYBE_SUDO}systemctl enable bluetooth
@@ -99,19 +100,21 @@ case $1 in
 				fi
 				;;
 		esac
-		if [ ! $FILESIZE = $(get_file_size "$FILE_CONFIG") ]; then
+		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
 			echo "> Updated $(basename "$FILE_CONFIG")..."
 		fi
 		echo "> $1 will be $2 after rebooting."
 		;;
 
 	firewall)
-		if maybe_install "ufw"; then
+		if is_which "ufw"; then
 			echo "> Reseting firewall..."
 			${MAYBE_SUDO}ufw logging off
 			${MAYBE_SUDO}ufw --force reset
-			case $2 in
-				on)
+		fi
+		case "$2" in
+			on)
+				if maybe_install "ufw"; then
 					echo "> Enabling firewall..."
 					${MAYBE_SUDO}ufw allow ssh
 					${MAYBE_SUDO}ufw default allow incoming
@@ -123,20 +126,22 @@ case $1 in
 					${MAYBE_SUDO}ufw deny pop3
 					${MAYBE_SUDO}ufw deny smtp
 					${MAYBE_SUDO}ufw --force enable
-					;;
-				off)
+				fi
+				;;
+			off)
+				if is_which "ufw"; then
 					echo "> Disabling firewall..."
 					${MAYBE_SUDO}ufw --force disable
-					;;
-			esac
-			echo "> $1 is now $2. This will persist after rebooting."
-		fi
+				fi
+				;;
+		esac
+		echo "> $1 is now $2. This will persist after rebooting."
 		;;
 
 	hdmi)
-    	FILESIZE_CONFIG=$(get_file_size "$FILE_CONFIG")
-    	FILESIZE_RCLOCAL=$(get_file_size "$FILE_RCLOCAL")
-		case $2 in
+		FILESIZE_CONFIG="$(get_file_size "$FILE_CONFIG")"
+		FILESIZE_RCLOCAL="$(get_file_size "$FILE_RCLOCAL")"
+		case "$2" in
 			on)
 				# hdmi_force_hotplug=1
 				if file_contains_line "$FILE_CONFIG" "#hdmi_force_hotplug=1"; then
@@ -156,7 +161,7 @@ case $1 in
 				# comment hdmi_force_hotplug=1
 				file_replace_line "$FILE_CONFIG" "(hdmi_force_hotplug=1)" "#\1" "sudo"
 				# sdtv_mode=18
-    			if [ $(get_system) = "Darwin" ]; then
+				if [ "$(get_system)" = "Darwin" ]; then
 					${MAYBE_SUDO}sed -i '' -E 's/sdtv_mode=[0-9]*/sdtv_mode=18/g' $FILE_CONFIG
 				else
 					${MAYBE_SUDO}sed -i -E 's/sdtv_mode=[0-9]*/sdtv_mode=18/g' $FILE_CONFIG
@@ -182,18 +187,18 @@ case $1 in
 				tvservice -p
 			fi
 		fi
-		if [ ! $FILESIZE_CONFIG = $(get_file_size "$FILE_CONFIG") ]; then
+		if [ ! "$FILESIZE_CONFIG" = "$(get_file_size "$FILE_CONFIG")" ]; then
 			echo "> Updated $(basename "$FILE_CONFIG")..."
 		fi
-		if [ ! $FILESIZE_RCLOCAL = $(get_file_size "$FILE_RCLOCAL") ]; then
+		if [ ! "$FILESIZE_RCLOCAL" = "$(get_file_size "$FILE_RCLOCAL")" ]; then
 			echo "> Updated $(basename "$FILE_RCLOCAL")..."
 		fi
 		echo "> $1 is now $2. This will persist after rebooting."
 		;;
 
 	network)
-    	FILESIZE=$(get_file_size "$FILE_CONFIG")
-		case $2 in
+		FILESIZE="$(get_file_size "$FILE_CONFIG")"
+		case "$2" in
 			on)
 				echo "> Enabling services..."
 				${MAYBE_SUDO}systemctl enable networking
@@ -215,7 +220,7 @@ case $1 in
 				fi
 				;;
 		esac
-		if [ ! $FILESIZE = $(get_file_size "$FILE_CONFIG") ]; then
+		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
 			echo "> Updated $(basename "$FILE_CONFIG")..."
 		fi
 		echo "> $1 is now $2. This will persist after rebooting."
@@ -223,7 +228,7 @@ case $1 in
 
 	*)
 		echo "Error in $0 on line $LINENO. Exiting..."
-	    exit 1
+		exit 1
 		;;
 esac
 
