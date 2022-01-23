@@ -23,6 +23,15 @@ if [ -z "$1" ]; then
 # install
 elif [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
+		if [ ! "$(get_system)" = "Darwin" ]; then
+			if is_opengl_legacy; then
+				maybe_install "cvlc" "vlc"
+			elif [ $(get_os_version_id) < 11 ]; then
+				maybe_install "omxplayer"
+			else
+				maybe_install "ffplay"
+			fi
+		fi
 		echo "> Installed."
 		exit 0
 	else
