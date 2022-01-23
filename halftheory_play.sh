@@ -64,7 +64,7 @@ elif is_which "omxplayer"; then
 fi
 
 if [ $BOOL_FALLBACK = true ] && is_which "ffplay"; then
-	CMD_TEST="ffplay -hide_banner -v quiet -fs -fast -framedrop -infbuf -autoexit -exitonkeydown -fflags discardcorrupt $(quote_string_with_spaces "$*")"
+	CMD_TEST="ffplay -hide_banner -v quiet -fs -fast -framedrop -infbuf -autoexit -fflags discardcorrupt $(quote_string_with_spaces "$*")"
 	eval "$CMD_TEST"
 fi
 
