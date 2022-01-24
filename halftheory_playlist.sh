@@ -23,6 +23,21 @@ if [ -z "$1" ]; then
 # install
 elif [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
+		if [ ! "$(get_system)" = "Darwin" ]; then
+			BOOL_FALLBACK=false
+			if is_opengl_legacy; then
+				if ! maybe_install "cvlc" "vlc"; then
+					BOOL_FALLBACK=true
+				fi
+			else
+				if ! maybe_install "omxplayer"; then
+					BOOL_FALLBACK=true
+				fi
+			fi
+			if [ $BOOL_FALLBACK = true ]; then
+				maybe_install "ffplay" "ffmpeg"
+			fi
+		fi
 		echo "> Installed."
 		echo "> Optional:"
 		echo "crontab -e"
@@ -43,86 +58,60 @@ elif [ "$1" = "-uninstall" ]; then
 	fi
 fi
 
-# check if able to run or already running
+# check if able to run
 if is_which "cvlc" && is_opengl_legacy; then
-	STR_TEST="vlc"
+	STR_PROCESS="vlc"
 elif is_which "omxplayer"; then
-	STR_TEST="omxplayer.bin"
+	STR_PROCESS="omxplayer.bin"
+elif is_which "ffplay"; then
+	STR_PROCESS="ffplay"
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
     exit 1
 fi
-if is_process_running "$STR_TEST"; then
+# check if already running
+if is_process_running "$STR_PROCESS"; then
 	exit 0
 fi
 
-# get file list
-LIST=""
-LIST_DIRS=()
-STR_ARGS="$(get_file_list_csv "$*")"
-IFS_OLD="$IFS"
-IFS=","
-for STR in "$STR_ARGS"; do
-	STR_TEST=""
-	if [ -d "$STR" ] && dir_has_files "$STR"; then
-		STR_TEST="###$STR###"
-		LIST_DIRS+=("$STR")
-	elif [ -e "$STR" ] && [[ "$(basename "$STR")" = *.* ]]; then
-		STR_TEST="$STR"
-	fi
-	if [ ! "$STR_TEST" = "" ]; then
-		if [ "$LIST" = "" ]; then
-			LIST="$STR_TEST"
-		else
-			LIST="$LIST,$STR_TEST"
-		fi
-	fi
-done
-IFS="$IFS_OLD"
-
-# replace dirs
-for STR in "${LIST_DIRS[@]}"; do
-	STR_TEST="$(get_file_list_csv $STR/*.*)"
-	if [ ! "$STR_TEST" = "" ]; then
-		LIST="${LIST//###$STR###/$STR_TEST}"
-	elif [[ $LIST = *###$STR###,* ]]; then
-		LIST="${LIST//###$STR###,/}"
-	elif [[ $LIST = *,###$STR###* ]]; then
-		LIST="${LIST//,###$STR###/}"
-	else
-		LIST="${LIST//###$STR###/}"
-	fi
-done
-
-if [ "$LIST" = "" ]; then
-	echo "Error in $0 on line $LINENO. Exiting..."
-    exit 1
-fi
-
-if is_which "cvlc" && is_opengl_legacy; then
-	LIST_VLC=""
-	IFS_OLD="$IFS"
-	IFS=","
-	for STR in "$LIST"; do
-		STR="$(quote_string_with_spaces "$STR")"
-		if [ "$LIST_VLC" = "" ]; then
-			LIST_VLC="$STR"
-		else
-			LIST_VLC="$LIST_VLC $STR"
-		fi
-	done
-	IFS="$IFS_OLD"
-	CMD_TEST="VLC_VERBOSE=0 cvlc $LIST_VLC --no-osd --fullscreen --align 0 --video-on-top --preferred-resolution -1 --no-interact --loop --no-play-and-exit"
-	eval "$CMD_TEST"
-elif is_which "omxplayer"; then
-	IFS_OLD="$IFS"
-	IFS=","
-	for STR in "$LIST"; do
-		clear
-		CMD_TEST="omxplayer -b -o local --no-osd --timeout 5 $(quote_string_with_spaces "$STR") > /dev/null"
+case "$STR_PROCESS" in
+	"vlc")
+		CMD_TEST="VLC_VERBOSE=0 cvlc $(get_file_list_quotes "$*") --no-osd --fullscreen --align 0 --video-on-top --preferred-resolution -1 --no-interact --loop --no-play-and-exit"
 		eval "$CMD_TEST"
-	done
-	IFS="$IFS_OLD"
-fi
+		;;
+
+	"omxplayer.bin")
+		LIST="$(get_file_list_csv "$*")"
+		ARR_TEST=()
+		IFS_OLD="$IFS"
+		IFS="," read -r -a ARR_TEST <<< "$LIST"
+		IFS="$IFS_OLD"
+		for STR in "${ARR_TEST[@]}"; do
+			clear
+			CMD_TEST="omxplayer -b -o local --no-osd --timeout 5 $(quote_string_with_spaces "$STR") > /dev/null"
+			eval "$CMD_TEST"
+		done
+		;;
+
+	"ffplay")
+		# make a playlist file
+		FILE_TEST="$(get_realpath "$DIRNAME")/$SCRIPT_ALIAS-$STR_PROCESS.txt"
+		rm $FILE_TEST > /dev/null 2>&1
+		touch $FILE_TEST
+		file_add_line $FILE_TEST "ffconcat version 1.0"
+		LIST="$(get_file_list_csv "$*")"
+		ARR_TEST=()
+		IFS_OLD="$IFS"
+		IFS="," read -r -a ARR_TEST <<< "$LIST"
+		IFS="$IFS_OLD"
+		for STR in "${ARR_TEST[@]}"; do
+			file_add_line $FILE_TEST "file $(quote_string_with_spaces "$STR")"
+		done
+		CMD_TEST="ffplay -hide_banner -v quiet -fs -fast -framedrop -infbuf -fflags discardcorrupt -safe 0 -loop 0 -f concat -i $(quote_string_with_spaces "$FILE_TEST")"
+		eval "$CMD_TEST"
+		sleep 1
+		rm $FILE_TEST > /dev/null 2>&1
+		;;
+esac
 
 exit 0
