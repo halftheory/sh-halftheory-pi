@@ -55,7 +55,7 @@ function dir_has_files()
 	if ! dir_not_empty "$STR_TEST"; then
 		return 1
 	fi
-	if [ "$(find "$STR_TEST" -type f -maxdepth 1 -name '*.*')" = "" ]; then
+	if [ "$(find "$STR_TEST" -maxdepth 1 -type f -name '*.*')" = "" ]; then
 		return 1
 	fi
 	return 0
@@ -353,78 +353,87 @@ function get_file_grp()
 function get_file_list_csv()
 {
 	# DIR/FILES
-	LIST=""
-	STR_TEST=""
+	# 1. split all by space.
+	ARR_TEST=()
 	IFS_OLD="$IFS"
-	IFS=" "
-	for STR in "$*"; do
-		if [ -e "$STR" ]; then
-			if [ "$LIST" = "" ]; then
-				LIST="$STR"
-			else
-				LIST="$LIST,$STR"
-			fi
+	IFS=" " read -r -a ARR_TEST <<< "$*"
+	IFS="$IFS_OLD"
+	if [ "$ARR_TEST" = "" ]; then
+		return 1
+	fi
+	# 2. find dirs and files containing spaces.
+	ARR_FILES=()
+	STR_TEST=""
+	for STR in "${ARR_TEST[@]}"; do
+		if [ -d "$STR" ] && dir_has_files "$STR"; then
+			STR_TEST2=""
+			for STR2 in $(get_realpath "$STR")/*.*; do
+				if [ -e "$STR2" ] && [[ "$(basename "$STR2")" = *.* ]] && [ ! -d "$STR2" ]; then
+					ARR_FILES+=("$STR2")
+					STR_TEST2=""
+				else
+					if [ "$STR_TEST2" = "" ]; then
+						STR_TEST2="$STR2"
+					else
+						STR_TEST2="$STR_TEST2 $STR2"
+					fi
+					if [ -e "$STR_TEST2" ] && [[ "$(basename "$STR_TEST2")" = *.* ]] && [ ! -d "$STR_TEST2" ]; then
+						ARR_FILES+=("$STR_TEST2")
+						STR_TEST2=""
+					fi
+				fi
+			done
+			STR_TEST=""
+		elif [ -e "$STR" ] && [[ "$(basename "$STR")" = *.* ]] && [ ! -d "$STR" ]; then
+			ARR_FILES+=("$(get_realpath "$STR")")
 			STR_TEST=""
 		else
 			if [ "$STR_TEST" = "" ]; then
 				STR_TEST="$STR"
 			else
 				STR_TEST="$STR_TEST $STR"
-				if [ -e "$STR_TEST" ]; then
-					if [ "$LIST" = "" ]; then
-						LIST="$STR_TEST"
-					else
-						LIST="$LIST,$STR_TEST"
-					fi
-					STR_TEST=""
-				fi
+			fi
+			if [ -e "$STR_TEST" ] && [[ "$(basename "$STR_TEST")" = *.* ]] && [ ! -d "$STR_TEST" ]; then
+				ARR_FILES+=("$(get_realpath "$STR_TEST")")
+				STR_TEST=""
 			fi
 		fi
 	done
-	IFS="$IFS_OLD"
-	if [ "$LIST" = "" ]; then
+	if [ "$ARR_FILES" = "" ]; then
 		return 1
 	fi
-	echo "$LIST"
+	# 4. convert array to csv
+	LIST=""
+	for STR in "${ARR_FILES[@]}"; do
+		if [ "$LIST" = "" ]; then
+			LIST="$STR"
+		else
+			LIST="$LIST,$STR"
+		fi
+	done
+	echo "${LIST%,}"
 	return 0
 }
 
 function get_file_list_quotes()
 {
 	# DIR/FILES
-	LIST=""
-	STR_TEST=""
+	ARR_TEST=()
 	IFS_OLD="$IFS"
-	IFS=" "
-	for STR in "$*"; do
-		if [ -e "$STR" ]; then
-			if [ "$LIST" = "" ]; then
-				LIST="$STR"
-			else
-				LIST="$LIST $STR"
-			fi
-			STR_TEST=""
-		else
-			if [ "$STR_TEST" = "" ]; then
-				STR_TEST="$STR"
-			else
-				STR_TEST="$STR_TEST $STR"
-				if [ -e "$STR_TEST" ]; then
-					if [ "$LIST" = "" ]; then
-						LIST="$(quote_string_with_spaces "$STR_TEST")"
-					else
-						LIST="$LIST $(quote_string_with_spaces "$STR_TEST")"
-					fi
-					STR_TEST=""
-				fi
-			fi
-		fi
-	done
+	IFS="," read -r -a ARR_TEST <<< "$(get_file_list_csv "$*")"
 	IFS="$IFS_OLD"
-	if [ "$LIST" = "" ]; then
+	if [ "$ARR_TEST" = "" ]; then
 		return 1
 	fi
-	echo "$LIST"
+	LIST=""
+	for STR in "${ARR_TEST[@]}"; do
+		if [ "$LIST" = "" ]; then
+			LIST="$(quote_string_with_spaces "$STR")"
+		else
+			LIST="$LIST $(quote_string_with_spaces "$STR")"
+		fi
+	done
+	echo "${LIST% }"
 	return 0
 }
 
@@ -560,7 +569,11 @@ function get_realpath()
 	if [ "$STR_TEST" = "" ]; then
 		return 1
 	fi
-	CMD_TEST="$(readlink "$STR_TEST")"
+	if is_which "realpath"; then
+		CMD_TEST="$(realpath -q "$STR_TEST")"
+	else
+		CMD_TEST="$(readlink -n "$STR_TEST")"
+	fi
 	if [ ! "$CMD_TEST" = "" ]; then
 		STR_TEST="$CMD_TEST"
 		if [ -d "$*" ] && [[ ! "$STR_TEST" = \/* ]]; then
@@ -654,7 +667,7 @@ function is_which()
 		return 1
 	fi
 	CMD_TEST="$(which $1 2>&1 | grep $1)"
-	if [ "$CMD_TEST" = "" ]; then
+	if [ "$CMD_TEST" = "" ] || [[ "$CMD_TEST" = *"not found"* ]]; then
 		return 1
 	fi
 	return 0
@@ -662,7 +675,7 @@ function is_which()
 
 function maybe_install()
 {
-	# APP [PACKAGE] [DONT-EXIT]
+	# APP [PACKAGE] [EXIT]
 	if [ -z $1 ]; then
 		return 1
 	fi
@@ -674,9 +687,9 @@ function maybe_install()
 	if [ $2 ]; then
 		MY_PACKAGE="$2"
 	fi
-	BOOL_EXIT=true
-	if [ $3 ]; then
-		BOOL_EXIT=false
+	BOOL_EXIT=false
+	if [ $3 ] && [ "$3" = "exit" ]; then
+		BOOL_EXIT=true
 	fi
     if [ "$(get_system)" = "Darwin" ]; then
     	if is_which "brew"; then

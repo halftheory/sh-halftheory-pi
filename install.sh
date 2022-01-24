@@ -15,17 +15,18 @@ else
 fi
 
 STR_ARG="-install"
-if [ $1 ]; then
-	if [ "$1" = "-uninstall" ]; then
-		STR_ARG="-uninstall"
-	fi
+if [ $1 ] && [ "$1" = "-uninstall" ]; then
+	STR_ARG="-uninstall"
 fi
 
 # loop through *.sh
+DIRNAME="$(get_realpath "$DIRNAME")"
 LIST="$(get_file_list_csv $DIRNAME/*.sh)"
+ARR_TEST=()
 IFS_OLD="$IFS"
-IFS=","
-for FILE in "$LIST"; do
+IFS="," read -r -a ARR_TEST <<< "$LIST"
+IFS="$IFS_OLD"
+for FILE in "${ARR_TEST[@]}"; do
 	chmod $CHMOD_FILES $FILE
 	# skip
 	if [[ "$FILE" = *halftheory_functions* ]] || [[ "$FILE" = *halftheory_vars* ]]; then
@@ -39,6 +40,5 @@ for FILE in "$LIST"; do
 	CMD_TEST="$FILE $STR_ARG"
 	eval "$CMD_TEST"
 done
-IFS="$IFS_OLD"
 
 exit 0
