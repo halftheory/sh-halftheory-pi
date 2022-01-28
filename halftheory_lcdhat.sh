@@ -14,19 +14,14 @@ else
 	exit 1
 fi
 
-SCRIPT_ALIAS="renicer"
+SCRIPT_ALIAS="lcdhat"
+DIR_WORKING="$(get_realpath "$DIRNAME")/$SCRIPT_ALIAS"
 
-# usage
-if [ -z $1 ]; then
-    echo "> Usage: $MAYBE_SUDO$SCRIPT_ALIAS [process] [persistent]"
-    exit 1
 # install
-elif [ "$1" = "-install" ]; then
+if [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
+		file_add_line_config_after_all "dtparam=spi=on"
 		echo "> Installed."
-		echo "> Optional:"
-		echo "${MAYBE_SUDO}crontab -e"
-		echo "@reboot $SCRIPT_ALIAS [process] [persistent] > /dev/null 2>&1"
 		exit 0
 	else
 		echo "Error in $0 on line $LINENO. Exiting..."
@@ -43,23 +38,6 @@ elif [ "$1" = "-uninstall" ]; then
 	fi
 fi
 
-echo "> Listening for $1..."
-PID_OLD=0
-while true; do
-	PID_NEW="$(get_pidof "$1")"
-	if ! is_int "$PID_NEW"; then
-		PID_OLD=0
-	elif [ ! "$PID_NEW" = "$PID_OLD" ]; then
-		${MAYBE_SUDO}renice -n -20 -p $PID_NEW > /dev/null 2>&1
-		PID_OLD="$PID_NEW"
-		echo "> $1 is now top priority..."
-		# not persistent
-		if [ -z $2 ]; then
-			#exit 0
-			break
-		fi
-	fi
-	sleep 60
-done;
+# https://www.waveshare.com/wiki/1.44inch_LCD_HAT
 
 exit 0

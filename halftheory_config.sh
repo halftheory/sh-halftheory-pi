@@ -40,40 +40,37 @@ elif [ "$1" = "-uninstall" ]; then
 	fi
 fi
 
-if [ ! "$2" = "on" ] && [ ! "$2" = "off" ]; then
-	echo "> Usage: $MAYBE_SUDO$SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
-	exit 1
-fi
+case "$2" in
+	on | off)
+		;;
+	*)
+		echo "> Usage: $MAYBE_SUDO$SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
+		exit 1
+		;;
+esac
 
 case "$1" in
 	audio)
 		FILESIZE="$(get_file_size "$FILE_CONFIG")"
 		case "$2" in
 			on)
-				if ! file_replace_line "$FILE_CONFIG" "dtparam=audio=off" "dtparam=audio=on" "sudo"; then
-					if file_contains_line "$FILE_CONFIG" "#dtparam=audio=on"; then
-						file_add_line "$FILE_CONFIG" "dtparam=audio=on" "sudo"
-					elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\ndtparam=audio=on" "sudo"; then
-						file_add_line "$FILE_CONFIG" "dtparam=audio=on" "sudo"
+				if ! file_contains_line "$FILE_CONFIG" "dtparam=audio=on"; then
+					if ! file_replace_line "$FILE_CONFIG" "dtparam=audio=off" "dtparam=audio=on" "sudo"; then
+						file_add_line_config_after_all "dtparam=audio=on"
 					fi
 				fi
-				if file_contains_line "$FILE_CONFIG" "#audio_pwm_mode=2"; then
-					file_add_line "$FILE_CONFIG" "audio_pwm_mode=2" "sudo"
-				elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\naudio_pwm_mode=2" "sudo"; then
-					file_add_line "$FILE_CONFIG" "audio_pwm_mode=2" "sudo"
-				fi
+				file_add_line_config_after_all "audio_pwm_mode=2"
 				;;
 			off)
-				if ! file_replace_line "$FILE_CONFIG" "dtparam=audio=on" "dtparam=audio=off" "sudo"; then
-					if file_contains_line "$FILE_CONFIG" "#dtparam=audio=off"; then
-						file_add_line "$FILE_CONFIG" "dtparam=audio=off" "sudo"
-					elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\ndtparam=audio=off" "sudo"; then
-						file_add_line "$FILE_CONFIG" "dtparam=audio=off" "sudo"
+				if ! file_contains_line "$FILE_CONFIG" "dtparam=audio=off"; then
+					if ! file_replace_line "$FILE_CONFIG" "dtparam=audio=on" "dtparam=audio=off" "sudo"; then
+						file_add_line_config_after_all "dtparam=audio=off"
 					fi
 				fi
 				file_replace_line "$FILE_CONFIG" "(audio_pwm_mode=2)" "#\1" "sudo"
 				;;
 		esac
+		sleep 1
 		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
 			echo "> Updated $(basename "$FILE_CONFIG")..."
 		fi
@@ -93,13 +90,10 @@ case "$1" in
 				echo "> Disabling services..."
 				${MAYBE_SUDO}systemctl disable bluetooth
 				${MAYBE_SUDO}systemctl disable hciuart
-				if file_contains_line "$FILE_CONFIG" "#dtoverlay=disable-bt"; then
-					file_add_line "$FILE_CONFIG" "dtoverlay=disable-bt" "sudo"
-				elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\ndtoverlay=disable-bt" "sudo"; then
-					file_add_line "$FILE_CONFIG" "dtoverlay=disable-bt" "sudo"
-				fi
+				file_add_line_config_after_all "dtoverlay=disable-bt"
 				;;
 		esac
+		sleep 1
 		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
 			echo "> Updated $(basename "$FILE_CONFIG")..."
 		fi
@@ -144,39 +138,31 @@ case "$1" in
 		case "$2" in
 			on)
 				# hdmi_force_hotplug=1
-				if file_contains_line "$FILE_CONFIG" "#hdmi_force_hotplug=1"; then
-					file_add_line "$FILE_CONFIG" "hdmi_force_hotplug=1" "sudo"
-				elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\nhdmi_force_hotplug=1" "sudo"; then
-					file_add_line "$FILE_CONFIG" "hdmi_force_hotplug=1" "sudo"
-				fi
+				file_add_line_config_after_all "hdmi_force_hotplug=1"
 				# comment sdtv_mode
 				file_replace_line "$FILE_CONFIG" "(sdtv_mode=[0-9]*)" "#\1" "sudo"
 				# rc.local
 				if is_which "vcgencmd"; then
-					file_replace_line "$FILE_RCLOCAL" "(vcgencmd display_power 0)" "#\1" "sudo"
 					vcgencmd display_power 1
+					file_replace_line "$FILE_RCLOCAL" "(vcgencmd display_power 0)" "#\1" "sudo"
 				fi
 				;;
 			off)
 				# comment hdmi_force_hotplug=1
 				file_replace_line "$FILE_CONFIG" "(hdmi_force_hotplug=1)" "#\1" "sudo"
 				# sdtv_mode=18
-				if [ "$(get_system)" = "Darwin" ]; then
-					${MAYBE_SUDO}sed -i '' -E 's/sdtv_mode=[0-9]*/sdtv_mode=18/g' $FILE_CONFIG
-				else
-					${MAYBE_SUDO}sed -i -E 's/sdtv_mode=[0-9]*/sdtv_mode=18/g' $FILE_CONFIG
-				fi
-				if file_contains_line "$FILE_CONFIG" "#sdtv_mode=18"; then
-					file_add_line "$FILE_CONFIG" "sdtv_mode=18" "sudo"
-				elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\nsdtv_mode=18" "sudo"; then
-					file_add_line "$FILE_CONFIG" "sdtv_mode=18" "sudo"
+				if ! file_contains_line "$FILE_CONFIG" "sdtv_mode=18"; then
+					if [ "$(get_system)" = "Darwin" ]; then
+						${MAYBE_SUDO}sed -i '' -E 's/sdtv_mode=[0-9]*/sdtv_mode=18/g' $FILE_CONFIG
+					else
+						${MAYBE_SUDO}sed -i -E 's/sdtv_mode=[0-9]*/sdtv_mode=18/g' $FILE_CONFIG
+					fi
+					file_add_line_config_after_all "sdtv_mode=18"
 				fi
 				# rc.local
 				if is_which "vcgencmd"; then
-					if ! file_replace_line_last "$FILE_RCLOCAL" "(exit 0)" "vcgencmd display_power 0\n\1" "sudo"; then
-						file_add_line "$FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
-					fi
 					vcgencmd display_power 0
+					file_add_line_rclocal_before_exit "vcgencmd display_power 0"
 				fi
 				;;
 		esac
@@ -187,6 +173,7 @@ case "$1" in
 				tvservice -p
 			fi
 		fi
+		sleep 1
 		if [ ! "$FILESIZE_CONFIG" = "$(get_file_size "$FILE_CONFIG")" ]; then
 			echo "> Updated $(basename "$FILE_CONFIG")..."
 		fi
@@ -213,13 +200,10 @@ case "$1" in
 				${MAYBE_SUDO}systemctl disable smbd
 				${MAYBE_SUDO}systemctl disable ssh
 				${MAYBE_SUDO}systemctl disable networking
-				if file_contains_line "$FILE_CONFIG" "#dtoverlay=disable-wifi"; then
-					file_add_line "$FILE_CONFIG" "dtoverlay=disable-wifi" "sudo"
-				elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\ndtoverlay=disable-wifi" "sudo"; then
-					file_add_line "$FILE_CONFIG" "dtoverlay=disable-wifi" "sudo"
-				fi
+				file_add_line_config_after_all "dtoverlay=disable-wifi"
 				;;
 		esac
+		sleep 1
 		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
 			echo "> Updated $(basename "$FILE_CONFIG")..."
 		fi
