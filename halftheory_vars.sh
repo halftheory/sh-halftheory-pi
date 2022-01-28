@@ -30,7 +30,43 @@ FILE_RCLOCAL="/etc/rc.local"
 
 function is_opengl_legacy()
 {
-	if file_contains_line "$FILE_CONFIG" "dtoverlay=vc4-kms-v3d"; then
+	if file_contains_line "$FILE_CONFIG" "dtoverlay=vc4-kms-v3d" || file_contains_line "$FILE_CONFIG" "dtoverlay=vc4-kms-v3d-pi4"; then
+		return 1
+	fi
+	return 0
+}
+
+function file_add_line_config_after_all()
+{
+	# STRING
+	if [ -z "$1" ]; then
+		return 1
+	fi
+	if ! file_contains_line "$FILE_CONFIG" "$*"; then
+		if file_contains_line "$FILE_CONFIG" "#$*"; then
+			file_add_line "$FILE_CONFIG" "$*" "sudo"
+		elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\n$*" "sudo"; then
+			file_add_line "$FILE_CONFIG" "$*" "sudo"
+		fi
+	else
+		return 1
+	fi
+	return 0
+}
+
+function file_add_line_rclocal_before_exit()
+{
+	# STRING
+	if [ -z "$1" ]; then
+		return 1
+	fi
+	if ! file_contains_line "$FILE_RCLOCAL" "$*"; then
+		if file_contains_line "$FILE_RCLOCAL" "#$*"; then
+			file_add_line "$FILE_RCLOCAL" "$*" "sudo"
+		elif ! file_replace_line_last "$FILE_RCLOCAL" "(exit 0)" "$*\n\1" "sudo"; then
+			file_add_line "$FILE_RCLOCAL" "$*" "sudo"
+		fi
+	else
 		return 1
 	fi
 	return 0

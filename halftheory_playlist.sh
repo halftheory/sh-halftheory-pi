@@ -95,10 +95,16 @@ case "$STR_PROCESS" in
 
 	"ffplay")
 		# make a playlist file
-		FILE_TEST="$(get_realpath "$DIRNAME")/$SCRIPT_ALIAS-$STR_PROCESS.txt"
-		rm $FILE_TEST > /dev/null 2>&1
+		FILE_TEST="$(get_realpath "$DIRNAME")/$SCRIPT_ALIAS/$STR_PROCESS.txt"
+		if [ ! -d "$(dirname "$FILE_TEST")" ]; then
+			mkdir -p $(dirname "$FILE_TEST")
+		else
+			rm $FILE_TEST > /dev/null 2>&1
+		fi
 		touch $FILE_TEST
+		chmod $CHMOD_FILES $FILE_TEST
 		file_add_line $FILE_TEST "ffconcat version 1.0"
+		# add the list
 		LIST="$(get_file_list_csv "$*")"
 		ARR_TEST=()
 		IFS_OLD="$IFS"

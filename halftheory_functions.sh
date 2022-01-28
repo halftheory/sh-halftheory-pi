@@ -628,6 +628,9 @@ function is_int()
 	if [ -z $1 ]; then
 		return 1
 	fi
+	if [ "$1" = "" ]; then
+		return 1
+	fi
 	if [ ! "${1//[0-9]/}" = "" ]; then
 		return 1
 	fi
