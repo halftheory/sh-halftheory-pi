@@ -45,7 +45,7 @@ function file_add_line_config_after_all()
 	if ! file_contains_line "$FILE_CONFIG" "$*"; then
 		if file_contains_line "$FILE_CONFIG" "#$*"; then
 			file_add_line "$FILE_CONFIG" "$*" "sudo"
-		elif ! file_replace_line_last "$FILE_CONFIG" "([all])" "\1\n$*" "sudo"; then
+		elif ! file_replace_line_first "$FILE_CONFIG" "(\[all\])" "\1\n$*" "sudo"; then
 			file_add_line "$FILE_CONFIG" "$*" "sudo"
 		fi
 	else
@@ -63,7 +63,7 @@ function file_add_line_rclocal_before_exit()
 	if ! file_contains_line "$FILE_RCLOCAL" "$*"; then
 		if file_contains_line "$FILE_RCLOCAL" "#$*"; then
 			file_add_line "$FILE_RCLOCAL" "$*" "sudo"
-		elif ! file_replace_line_last "$FILE_RCLOCAL" "(exit 0)" "$*\n\1" "sudo"; then
+		elif ! file_replace_line_first "$FILE_RCLOCAL" "(exit 0)" "$*\n\1" "sudo"; then
 			file_add_line "$FILE_RCLOCAL" "$*" "sudo"
 		fi
 	else

@@ -26,7 +26,7 @@ elif [ "$1" = "-install" ]; then
 		echo "> Installed."
 		echo "> Optional:"
 		echo "${MAYBE_SUDO}crontab -e"
-		echo "@reboot $SCRIPT_ALIAS [process] [persistent] > /dev/null 2>&1"
+		echo "@reboot tmux new -d -s $SCRIPT_ALIAS '$SCRIPT_ALIAS [process] [persistent]' > /dev/null 2>&1"
 		exit 0
 	else
 		echo "Error in $0 on line $LINENO. Exiting..."

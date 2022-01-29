@@ -121,7 +121,7 @@ function file_add_line()
 		if [ $4 ]; then
 			ARG_BACKUP="$4"
 		fi
-		if file_replace_line_first "$1" "#$2" "$2" "$ARG_SUDO" "$ARG_BACKUP"; then
+		if file_replace_line_first "$1" "#($2)" "\1" "$ARG_SUDO" "$ARG_BACKUP"; then
 			return 0
 		fi
 	fi
@@ -132,7 +132,33 @@ function file_add_line()
 	if [ $4 ]; then
 		${STR_SUDO}cp -f $1 $1.bak > /dev/null 2>&1
 	fi
-	echo "$2" | ${STR_SUDO}tee -a $1  > /dev/null 2>&1
+	echo "$2" | ${STR_SUDO}tee -a $1 > /dev/null 2>&1
+	return 0
+}
+
+function file_comment_line()
+{
+    # FILE SEARCH [SUDO] [BACKUP]
+	if [ -z "$2" ]; then
+        return 1
+    fi
+    if [ ! -e "$1" ]; then
+        return 1
+    fi
+	if ! file_contains_line "$1" "$2"; then
+		return 1
+	fi
+	ARG_SUDO=""
+	if [ $3 ]; then
+		ARG_SUDO="$3"
+	fi
+	ARG_BACKUP=""
+	if [ $4 ]; then
+		ARG_BACKUP="$4"
+	fi
+	if ! file_replace_line_first "$1" "($2)" "#\1" "$ARG_SUDO" "$ARG_BACKUP"; then
+		return 1
+	fi
 	return 0
 }
 
@@ -171,7 +197,7 @@ function file_delete_line()
         return 1
     fi
     BOOL_REGEX=false
-    if [[ "$2" = *\(*\)* ]]; then
+    if is_string_regex "$2"; then
     	BOOL_REGEX=true
     	FILESIZE="$(get_file_size "$1")"
     fi
@@ -213,7 +239,7 @@ function file_replace_line()
         return 1
     fi
     BOOL_REGEX=false
-    if [[ "$2" = *\(*\)* ]]; then
+    if is_string_regex "$2"; then
     	BOOL_REGEX=true
     	FILESIZE="$(get_file_size "$1")"
     fi
@@ -226,17 +252,9 @@ function file_replace_line()
 	fi
 	STR_BACKUP=""
 	if [ $5 ]; then
-		STR_BACKUP=".bak"
+		STR_BACKUP=" -i.bak"
 	fi
-    if [ "$(get_system)" = "Darwin" ]; then
-    	if [ "$STR_BACKUP" = "" ]; then
-			${STR_SUDO}sed -i '' -E "s/$(escape_slashes "$2")/$(escape_slashes "$3")/g" $1
-		else
-			${STR_SUDO}sed -i${STR_BACKUP} -E "s/$(escape_slashes "$2")/$(escape_slashes "$3")/g" $1
-		fi
-	else
-		${STR_SUDO}sed -i${STR_BACKUP} -E "s/$(escape_slashes "$2")/$(escape_slashes "$3")/g" $1
-	fi
+	perl -0777 -pi${STR_BACKUP} -e "s/^$(escape_slashes "$2")$/$(escape_slashes "$3")/msg" $1
 	if [ $BOOL_REGEX = true ]; then
 		if [ "$FILESIZE" = "$(get_file_size "$1")" ]; then
 			return 1
@@ -255,7 +273,7 @@ function file_replace_line_first()
         return 1
     fi
     BOOL_REGEX=false
-    if [[ "$2" = *\(*\)* ]]; then
+    if is_string_regex "$2"; then
     	BOOL_REGEX=true
     	FILESIZE="$(get_file_size "$1")"
     fi
@@ -268,17 +286,9 @@ function file_replace_line_first()
 	fi
 	STR_BACKUP=""
 	if [ $5 ]; then
-		STR_BACKUP=".bak"
+		STR_BACKUP=" -i.bak"
 	fi
-    if [ "$(get_system)" = "Darwin" ]; then
-    	if [ "$STR_BACKUP" = "" ]; then
-			${STR_SUDO}sed -i '' -E "1,/$(escape_slashes "$2")/s/$(escape_slashes "$2")/$(escape_slashes "$3")/g" $1
-		else
-			${STR_SUDO}sed -i${STR_BACKUP} -E "1,/$(escape_slashes "$2")/s/$(escape_slashes "$2")/$(escape_slashes "$3")/g" $1
-		fi
-	else
-		${STR_SUDO}sed -i${STR_BACKUP} -E "0,/$(escape_slashes "$2")/s/$(escape_slashes "$2")/$(escape_slashes "$3")/g" $1
-	fi
+	perl -0777 -pi${STR_BACKUP} -e "s/^$(escape_slashes "$2")$/$(escape_slashes "$3")/ms" $1
 	if [ $BOOL_REGEX = true ]; then
 		if [ "$FILESIZE" = "$(get_file_size "$1")" ]; then
 			return 1
@@ -289,6 +299,7 @@ function file_replace_line_first()
 
 function file_replace_line_last()
 {
+	# TODO!
     # FILE SEARCH REPLACE [SUDO] [BACKUP]
 	if [ -z "$3" ]; then
         return 1
@@ -647,6 +658,16 @@ function is_process_running()
 		return 1
 	fi
 	return 0
+}
+
+function is_string_regex()
+{
+	# STRING
+	STR_TEST="$*"
+    if [[ "$STR_TEST" = *\(*\)* ]] || [[ "$STR_TEST" = *\[*\]* ]]; then
+    	return 0
+    fi
+    return 1
 }
 
 function is_sudo()
