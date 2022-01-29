@@ -67,7 +67,7 @@ case "$1" in
 						file_add_line_config_after_all "dtparam=audio=off"
 					fi
 				fi
-				file_replace_line "$FILE_CONFIG" "(audio_pwm_mode=2)" "#\1" "sudo"
+				file_comment_line "$FILE_CONFIG" "audio_pwm_mode=2" "sudo"
 				;;
 		esac
 		sleep 1
@@ -84,7 +84,7 @@ case "$1" in
 				echo "> Enabling services..."
 				${MAYBE_SUDO}systemctl enable bluetooth
 				${MAYBE_SUDO}systemctl enable hciuart
-				file_replace_line "$FILE_CONFIG" "(dtoverlay=disable-bt)" "#\1" "sudo"
+				file_comment_line "$FILE_CONFIG" "dtoverlay=disable-bt" "sudo"
 				;;
 			off)
 				echo "> Disabling services..."
@@ -144,12 +144,12 @@ case "$1" in
 				# rc.local
 				if is_which "vcgencmd"; then
 					vcgencmd display_power 1
-					file_replace_line "$FILE_RCLOCAL" "(vcgencmd display_power 0)" "#\1" "sudo"
+					file_comment_line "$FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
 				fi
 				;;
 			off)
 				# comment hdmi_force_hotplug=1
-				file_replace_line "$FILE_CONFIG" "(hdmi_force_hotplug=1)" "#\1" "sudo"
+				file_comment_line "$FILE_CONFIG" "hdmi_force_hotplug=1" "sudo"
 				# sdtv_mode=18
 				if ! file_contains_line "$FILE_CONFIG" "sdtv_mode=18"; then
 					if [ "$(get_system)" = "Darwin" ]; then
@@ -168,7 +168,7 @@ case "$1" in
 		esac
 		# need for both hdmi and pal
 		if is_which "tvservice"; then
-			file_replace_line "$FILE_RCLOCAL" "(tvservice -o)" "#\1" "sudo"
+			file_comment_line "$FILE_RCLOCAL" "tvservice -o" "sudo"
 			if is_opengl_legacy; then
 				tvservice -p
 			fi
@@ -192,7 +192,7 @@ case "$1" in
 				${MAYBE_SUDO}systemctl enable ssh
 				${MAYBE_SUDO}systemctl enable smbd
 				${MAYBE_SUDO}systemctl enable nmbd
-				file_replace_line "$FILE_CONFIG" "(dtoverlay=disable-wifi)" "#\1" "sudo"
+				file_comment_line "$FILE_CONFIG" "dtoverlay=disable-wifi" "sudo"
 				;;
 			off)
 				echo "> Disabling services..."
