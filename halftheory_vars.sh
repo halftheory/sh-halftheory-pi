@@ -36,6 +36,15 @@ function is_opengl_legacy()
 	return 0
 }
 
+function is_vcgencmd_working()
+{
+	STR_TEST="$(get_os_version_id)"
+	if is_which "vcgencmd" && is_int "$STR_TEST" && (($STR_TEST < 11)); then
+		return 0
+	fi
+	return 1
+}
+
 function file_add_line_config_after_all()
 {
 	# STRING

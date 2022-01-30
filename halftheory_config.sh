@@ -142,9 +142,9 @@ case "$1" in
 				# comment sdtv_mode
 				file_replace_line "$FILE_CONFIG" "(sdtv_mode=[0-9]*)" "#\1" "sudo"
 				# rc.local
-				if is_which "vcgencmd"; then
-					vcgencmd display_power 1
+				if is_vcgencmd_working; then
 					file_comment_line "$FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
+					vcgencmd display_power 1
 				fi
 				;;
 			off)
@@ -153,16 +153,16 @@ case "$1" in
 				# sdtv_mode=18
 				if ! file_contains_line "$FILE_CONFIG" "sdtv_mode=18"; then
 					if [ "$(get_system)" = "Darwin" ]; then
-						${MAYBE_SUDO}sed -i '' -E 's/sdtv_mode=[0-9]*/sdtv_mode=18/g' $FILE_CONFIG
+						${MAYBE_SUDO}sed -i '' -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" $FILE_CONFIG
 					else
-						${MAYBE_SUDO}sed -i -E 's/sdtv_mode=[0-9]*/sdtv_mode=18/g' $FILE_CONFIG
+						${MAYBE_SUDO}sed -i -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" $FILE_CONFIG
 					fi
 					file_add_line_config_after_all "sdtv_mode=18"
 				fi
 				# rc.local
-				if is_which "vcgencmd"; then
-					vcgencmd display_power 0
+				if is_vcgencmd_working; then
 					file_add_line_rclocal_before_exit "vcgencmd display_power 0"
+					vcgencmd display_power 0
 				fi
 				;;
 		esac
