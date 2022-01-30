@@ -254,7 +254,7 @@ function file_replace_line()
 	if [ $5 ]; then
 		STR_BACKUP=" -i.bak"
 	fi
-	perl -0777 -pi${STR_BACKUP} -e "s/^$(escape_slashes "$2")$/$(escape_slashes "$3")/msg" $1
+	${STR_SUDO}perl -0777 -pi${STR_BACKUP} -e "s/^$(escape_slashes "$2")$/$(escape_slashes "$3")/msg" $1
 	if [ $BOOL_REGEX = true ]; then
 		if [ "$FILESIZE" = "$(get_file_size "$1")" ]; then
 			return 1
@@ -288,7 +288,7 @@ function file_replace_line_first()
 	if [ $5 ]; then
 		STR_BACKUP=" -i.bak"
 	fi
-	perl -0777 -pi${STR_BACKUP} -e "s/^$(escape_slashes "$2")$/$(escape_slashes "$3")/ms" $1
+	${STR_SUDO}perl -0777 -pi${STR_BACKUP} -e "s/^$(escape_slashes "$2")$/$(escape_slashes "$3")/ms" $1
 	if [ $BOOL_REGEX = true ]; then
 		if [ "$FILESIZE" = "$(get_file_size "$1")" ]; then
 			return 1
@@ -496,7 +496,7 @@ function get_hostname()
 	if [ -e "/etc/hostname" ]; then
 		read -r STR_TEST < /etc/hostname
 	fi
-	echo "$STR_TEST"
+	echo "$(trim_space "$STR_TEST")"
 	return 0
 }
 
@@ -505,7 +505,7 @@ function get_macos_version()
 	if is_which "sw_vers"; then
 		CMD_TEST="$(sw_vers | grep ProductVersion)"
 		if [ ! "$CMD_TEST" = "" ]; then
-			echo "${CMD_TEST##*ProductVersion:}"
+			echo "$(trim_space "${CMD_TEST##*ProductVersion:}")"
 			return 0
 		fi
 	fi
@@ -516,7 +516,7 @@ function get_os_version()
 {
 	if [ -e "/etc/debian_version" ]; then
 		read -r STR_TEST < /etc/debian_version
-		echo "$STR_TEST"
+		echo "$(trim_space "$STR_TEST")"
 		return 0
 	fi
 	if [ -e "/etc/os-release" ]; then
@@ -524,7 +524,7 @@ function get_os_version()
 		if [ ! "$CMD_TEST" = "" ]; then
 			CMD_TEST="${CMD_TEST##*VERSION_ID=\"}"
 			CMD_TEST="${CMD_TEST%\"}"
-			echo "$CMD_TEST"
+			echo "$(trim_space "$CMD_TEST")"
 			return 0
 		fi
 	fi
@@ -542,13 +542,13 @@ function get_os_version_id()
 		if [ ! "$CMD_TEST" = "" ]; then
 			CMD_TEST="${CMD_TEST##*VERSION_ID=\"}"
 			CMD_TEST="${CMD_TEST%\"}"
-			echo "$CMD_TEST"
+			echo "$(trim_space "$CMD_TEST")"
 			return 0
 		fi
 	fi
 	if [ -e "/etc/debian_version" ]; then
 		read -r STR_TEST < /etc/debian_version
-		echo "${STR_TEST%%.*}"
+		echo "$(trim_space "${STR_TEST%%.*}")"
 		return 0
 	fi
 	if [ "$(get_system)" = "Darwin" ]; then
@@ -600,7 +600,7 @@ function get_system()
 	STR_TEST="Linux"
 	CMD_TEST="$(uname -s)"
 	if [ ! "$CMD_TEST" = "" ]; then
-		STR_TEST="${CMD_TEST%% *}"
+		STR_TEST="$(trim_space "${CMD_TEST%% *}")"
 	fi
 	echo "$STR_TEST"
 	return 0
@@ -628,6 +628,10 @@ function get_user_dir()
 	fi
 	if [ "$(get_system)" = "Darwin" ] && [ -d "/Users/$1" ]; then
 		echo "$(bash -c "cd ~$(printf %q "$1") && pwd")"
+		return 0
+	fi
+	if [ "$(whoami)" = "$1" ] && [ -n "$HOME" ]; then
+		echo "$HOME"
 		return 0
 	fi
 	return 1
@@ -842,5 +846,13 @@ function script_uninstall()
 		fi
 		${STR_SUDO}rm $2 > /dev/null 2>&1
 	fi
+	return 0
+}
+
+function trim_space()
+{
+	# STRING
+	STR_TEST="$*"
+	echo "$(echo $STR_TEST | xargs)"
 	return 0
 }

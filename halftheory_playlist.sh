@@ -41,7 +41,11 @@ elif [ "$1" = "-install" ]; then
 		echo "> Installed."
 		echo "> Optional:"
 		echo "crontab -e"
-		echo "* * * * * tmux new -d -s $SCRIPT_ALIAS '$SCRIPT_ALIAS [files]' > /dev/null 2>&1"
+		if is_which "tmux"; then
+			echo "* * * * * tmux new -d -s $SCRIPT_ALIAS '$SCRIPT_ALIAS [files]' > /dev/null 2>&1"
+		else
+			echo "* * * * * $SCRIPT_ALIAS [files] > /dev/null 2>&1"
+		fi
 		exit 0
 	else
 		echo "Error in $0 on line $LINENO. Exiting..."
