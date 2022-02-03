@@ -23,7 +23,8 @@ if [ -z "$1" ]; then
 # install
 elif [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
-		if [ ! "$(get_system)" = "Darwin" ]; then
+		# depends
+		if has_arg "$*" "-depends" && [ ! "$(get_system)" = "Darwin" ]; then
 			BOOL_FALLBACK=false
 			if is_opengl_legacy; then
 				if ! maybe_install "cvlc" "vlc"; then

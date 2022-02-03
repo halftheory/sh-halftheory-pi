@@ -15,15 +15,25 @@ else
 fi
 
 SCRIPT_ALIAS="playlist"
+DIR_WORKING="$(get_realpath "$DIRNAME")/$SCRIPT_ALIAS"
 
 # usage
 if [ -z "$1" ]; then
     echo "> Usage: $SCRIPT_ALIAS [files]"
+    echo ""
+	echo "> Optional:"
+	echo "crontab -e"
+	if is_which "tmux"; then
+		echo "* * * * * $(cmd_tmux "$SCRIPT_ALIAS [files]" "$SCRIPT_ALIAS")"
+	else
+		echo "* * * * * $SCRIPT_ALIAS [files] > /dev/null 2>&1"
+	fi
     exit 1
 # install
 elif [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
-		if [ ! "$(get_system)" = "Darwin" ]; then
+		# depends
+		if has_arg "$*" "-depends" && [ ! "$(get_system)" = "Darwin" ]; then
 			BOOL_FALLBACK=false
 			if is_opengl_legacy; then
 				if ! maybe_install "cvlc" "vlc"; then
@@ -39,13 +49,6 @@ elif [ "$1" = "-install" ]; then
 			fi
 		fi
 		echo "> Installed."
-		echo "> Optional:"
-		echo "crontab -e"
-		if is_which "tmux"; then
-			echo "* * * * * tmux new -d -s $SCRIPT_ALIAS '$SCRIPT_ALIAS [files]' > /dev/null 2>&1"
-		else
-			echo "* * * * * $SCRIPT_ALIAS [files] > /dev/null 2>&1"
-		fi
 		exit 0
 	else
 		echo "Error in $0 on line $LINENO. Exiting..."
@@ -54,6 +57,9 @@ elif [ "$1" = "-install" ]; then
 # uninstall
 elif [ "$1" = "-uninstall" ]; then
 	if script_uninstall "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
+		if has_arg "$*" "-depends"; then
+			rm -Rf $DIR_WORKING > /dev/null 2>&1
+		fi
 		echo "> Uninstalled."
 		exit 0
 	else
@@ -99,9 +105,10 @@ case "$STR_PROCESS" in
 
 	"ffplay")
 		# make a playlist file
-		FILE_TEST="$(get_realpath "$DIRNAME")/$SCRIPT_ALIAS/$STR_PROCESS.txt"
-		if [ ! -d "$(dirname "$FILE_TEST")" ]; then
-			mkdir -p $(dirname "$FILE_TEST")
+		FILE_TEST="$DIR_WORKING/$STR_PROCESS.txt"
+		if [ ! -d "$DIR_WORKING" ]; then
+			mkdir -p $DIR_WORKING
+			chmod $CHMOD_DIRS $DIR_WORKING
 		else
 			rm $FILE_TEST > /dev/null 2>&1
 		fi

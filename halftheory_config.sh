@@ -18,11 +18,15 @@ SCRIPT_ALIAS="config"
 
 # usage
 if [ -z $1 ]; then
-	echo "> Usage: $MAYBE_SUDO$SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
+	echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
 	exit 1
 # install
 elif [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
+		# depends
+		if has_arg "$*" "-depends" && [ ! "$(get_system)" = "Darwin" ]; then
+			maybe_install "ufw"
+		fi
 		echo "> Installed."
 		exit 0
 	else
@@ -44,7 +48,7 @@ case "$2" in
 	on | off)
 		;;
 	*)
-		echo "> Usage: $MAYBE_SUDO$SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
+		echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
 		exit 1
 		;;
 esac

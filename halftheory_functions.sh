@@ -45,6 +45,24 @@ function cmd_ssh()
 	return 1
 }
 
+function cmd_tmux()
+{
+	# CMD [SESSION] [SUDO]
+	if [ -z "$1" ]; then
+		return 1
+	fi
+	STR_SESSION=""
+	if [ $2 ]; then
+		STR_SESSION=" -s $2"
+	fi
+	STR_SUDO=""
+	if [ $3 ] && [ "$3" = "sudo" ]; then
+		STR_SUDO="$(maybe_sudo)"
+	fi
+	echo "${STR_SUDO}tmux new -d${STR_SESSION} \"$(escape_quotes "$1")\" > /dev/null 2>&1"
+	return 0
+}
+
 function dir_has_files()
 {
 	# DIR
@@ -74,6 +92,17 @@ function dir_not_empty()
 	if [ "$(ls -A "$STR_TEST")" = "" ]; then
 		return 1
 	fi
+	return 0
+}
+
+function escape_quotes()
+{
+	# STRING
+	STR_TEST="$*"
+	if [[ "$STR_TEST" = *\"* ]]; then
+		STR_TEST="${STR_TEST//\"/\\\"}"
+	fi
+	echo "$STR_TEST"
 	return 0
 }
 
@@ -109,7 +138,7 @@ function file_add_line()
         return 1
     fi
 	if file_contains_line "$1" "$2"; then
-		return 1
+		return 0
 	fi
 	# uncomment
 	if file_contains_line "$1" "#$2"; then
@@ -637,6 +666,27 @@ function get_user_dir()
 	return 1
 }
 
+function has_arg()
+{
+	# ARGS STRING
+	if [ -z "$2" ]; then
+		return 1
+	fi
+	ARR_TEST=()
+	IFS_OLD="$IFS"
+	IFS=" " read -r -a ARR_TEST <<< "$1"
+	IFS="$IFS_OLD"
+	if [ "$ARR_TEST" = "" ]; then
+		return 1
+	fi
+	for STR in "${ARR_TEST[@]}"; do
+		if [ "$STR" = "$2" ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
 function is_int()
 {
 	# VALUE
@@ -725,8 +775,12 @@ function maybe_install()
     		sleep 1
     	fi
     else
-		$(maybe_sudo)apt-get -y install $MY_PACKAGE
-		sleep 1
+    	CMD_TEST="$(maybe_sudo)apt list --installed 2>&1 | grep \"$MY_PACKAGE/\""
+		CMD_TEST="$(eval "$CMD_TEST")"
+    	if [ "$CMD_TEST" = "" ]; then
+			$(maybe_sudo)apt-get -y install $MY_PACKAGE
+			sleep 1
+		fi
 	fi
 	if ! is_which "$MY_APP"; then
 		if [ $BOOL_EXIT = true ]; then
@@ -764,6 +818,42 @@ function maybe_sudo()
 	fi
 	echo "sudo "
 	return 0
+}
+
+function maybe_tmux()
+{
+	# CMD [SESSION] [SUDO]
+	if [ -z "$1" ]; then
+		return 1
+	fi
+	STR_SUDO=""
+	if [ $3 ] && [ "$3" = "sudo" ]; then
+		STR_SUDO="$(maybe_sudo)"
+	fi
+	if is_which "tmux"; then
+		ARG_SESSION=""
+		# find existing session
+		if [ $2 ]; then
+			if [ ! "$(${STR_SUDO}tmux ls 2>&1 | grep $2:)" = "" ]; then
+				${STR_SUDO}tmux send-keys -t $2 "$(escape_quotes "$1")" C-m
+				return 0
+			fi
+			ARG_SESSION="$2"
+		fi
+		ARG_SUDO=""
+		if [ $3 ]; then
+			ARG_SUDO="$3"
+		fi
+		# new session
+		eval "$(cmd_tmux "$1" "$ARG_SESSION" "$ARG_SUDO")"
+		return 0
+	else
+		echo "$(eval "${STR_SUDO}$1")"
+		if [ $? -eq 0 ]; then
+			return 0
+		fi
+	fi
+	return 1
 }
 
 function quote_string_with_spaces()
