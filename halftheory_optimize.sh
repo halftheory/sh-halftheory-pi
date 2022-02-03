@@ -18,7 +18,7 @@ SCRIPT_ALIAS="optimize"
 
 # usage
 if [ -z $1 ]; then
-	echo "> Usage: $MAYBE_SUDO$SCRIPT_ALIAS [all|force]"
+	echo "> Usage: $SCRIPT_ALIAS [all|force]"
 	echo "> Warning: This script is not designed to undo these changes."
 	exit 1
 # install
@@ -66,13 +66,38 @@ function prompt()
 	return 0
 }
 
+if prompt "Set all passwords to 'pi'"; then
+	echo -ne "pi\npi\n" | ${MAYBE_SUDO}passwd root
+	echo -ne "pi\npi\n" | ${MAYBE_SUDO}passwd $OWN_LOCAL
+fi
+
+if prompt "Set locale to en_US.UTF-8"; then
+	STR_TEST="en_US.UTF-8"
+	if [ ! "$(locale 2>&1 | grep -v $STR_TEST)" = "" ]; then
+		export LANG=$STR_TEST
+		export LANGUAGE=$STR_TEST
+		#${MAYBE_SUDO}dpkg-reconfigure locales
+		${MAYBE_SUDO}locale-gen --purge $STR_TEST
+		${MAYBE_SUDO}update-locale LANG=$STR_TEST LANGUAGE=$STR_TEST LC_CTYPE=$STR_TEST LC_ALL=$STR_TEST
+	fi
+fi
+
+if prompt "Perform apt-get upgrades"; then
+	if check_remote_host "archive.raspberrypi.org"; then
+		${MAYBE_SUDO}apt-get clean
+		${MAYBE_SUDO}apt-get update
+		${MAYBE_SUDO}apt-get upgrade
+		${MAYBE_SUDO}apt-get dist-upgrade
+	fi
+fi
+
 if prompt "Remove triggerhappy"; then
 	if [ -e "/etc/init.d/triggerhappy" ] || [ -e "/etc/default/triggerhappy" ]; then
 		${MAYBE_SUDO}systemctl disable triggerhappy
 		${MAYBE_SUDO}apt-get -y remove triggerhappy
 		${MAYBE_SUDO}apt-get -y autoremove
-		${MAYBE_SUDO}rm /etc/init.d/triggerhappy > /dev/null 2>&1
-		${MAYBE_SUDO}rm /etc/default/triggerhappy > /dev/null 2>&1
+		${MAYBE_SUDO}rm -f /etc/init.d/triggerhappy > /dev/null 2>&1
+		${MAYBE_SUDO}rm -f /etc/default/triggerhappy > /dev/null 2>&1
 	fi
 fi
 
@@ -209,6 +234,19 @@ if prompt "Turn off blinking cursor"; then
 	fi
 fi
 
+if prompt "Delete mac system files"; then
+	ARR_TEST=(
+		"boot"
+		"home"
+	)
+	for STR_TEST in "${ARR_TEST[@]}"; do
+		${MAYBE_SUDO}find /$STR_TEST -type f -name "._*" -delete
+		${MAYBE_SUDO}find /$STR_TEST -type f -name "*DS_Store*" -delete
+		${MAYBE_SUDO}find /$STR_TEST -type d -name ".fseventsd" | while read STR_FILE; do ${MAYBE_SUDO}rm -Rf $STR_FILE; done
+		${MAYBE_SUDO}find /$STR_TEST -type d -name ".Spotlight-V100" | while read STR_FILE; do ${MAYBE_SUDO}rm -Rf $STR_FILE; done
+	done
+fi
+
 if prompt "Disable video"; then
 	if is_which "tvservice" && is_opengl_legacy; then
 		if file_add_line_rclocal_before_exit "tvservice -o"; then
@@ -227,6 +265,10 @@ if prompt "Disable video"; then
 		fi
 		vcgencmd display_power 0
 	fi
+fi
+
+if prompt "Run raspi-config"; then
+	${MAYBE_SUDO}raspi-config
 fi
 
 echo "> Done."

@@ -14,13 +14,14 @@ else
 	exit 1
 fi
 
-STR_ARG="-install"
-if [ $1 ] && [ "$1" = "-uninstall" ]; then
-	STR_ARG="-uninstall"
+# vars
+DIRNAME="$(get_realpath "$DIRNAME")"
+STR_ARG="$(trim_space "$*")"
+if [ "$STR_ARG" = "" ]; then
+	STR_ARG="-install"
 fi
 
 # loop through *.sh
-DIRNAME="$(get_realpath "$DIRNAME")"
 LIST="$(get_file_list_csv $DIRNAME/*.sh)"
 ARR_TEST=()
 IFS_OLD="$IFS"

@@ -21,19 +21,22 @@ if [ ! "$PROMPT_TEST" = "y" ]; then
 	exit 0
 fi
 
+# vars
+DIRNAME="$(get_realpath "$DIRNAME")"
+
 # functions
-function halftheory_uninstall()
+function scripts_install()
 {
 	if script_install "$DIRNAME/install.sh"; then
-		$DIRNAME/install.sh -uninstall
+		$DIRNAME/install.sh
 		return 0
 	fi
 	return 1
 }
-function halftheory_install()
+function scripts_uninstall()
 {
 	if script_install "$DIRNAME/install.sh"; then
-		$DIRNAME/install.sh
+		$DIRNAME/install.sh -uninstall
 		return 0
 	fi
 	return 1
@@ -42,37 +45,41 @@ function halftheory_install()
 # git
 if [ -d "$DIRNAME/.git" ]; then
 	if maybe_install "git"; then
-		halftheory_uninstall
-		git fetch
-		git pull
-		if halftheory_install; then
+		scripts_uninstall
+		(cd $DIRNAME && git fetch && git pull)
+		if scripts_install; then
 			echo "> Updated."
 			exit 0
 		fi
 	fi
 fi
 
-# wget
+# curl
+STR_REPO="$(basename "$DIRNAME")"
+if [ "$STR_REPO" = "" ]; then
+	exit 1
+fi
 if maybe_install "wget"; then
-	wget -q https://github.com/halftheory/sh-halftheory-pi/archive/refs/heads/main.zip
-	sleep 1
-	if [ -f "main.zip" ]; then
+	wget -q https://github.com/halftheory/$STR_REPO/archive/refs/heads/main.zip
+	if [ $? -eq 0 ] && [ -f "main.zip" ]; then
 		if is_which "unzip"; then
 			unzip -oq main.zip -d $DIRNAME
 		else
 			tar vxfz main.zip -C $DIRNAME
 		fi
-		if [ -d "$DIRNAME/sh-halftheory-pi-main" ]; then
-			halftheory_uninstall
-			cp -Rf $DIRNAME/sh-halftheory-pi-main/ $DIRNAME/
-			rm -Rf $DIRNAME/sh-halftheory-pi-main
-			if halftheory_install; then
+		if [ -d "$DIRNAME/$STR_REPO-main" ]; then
+			chmod $CHMOD_DIRS $DIRNAME/$STR_REPO-main
+			scripts_uninstall
+			cp -Rf $DIRNAME/$STR_REPO-main/ $DIRNAME/
+			rm -Rf $DIRNAME/$STR_REPO-main > /dev/null 2>&1
+			if scripts_install; then
 				echo "> Updated."
 			fi
 		fi
-		rm -f main.zip
+		rm -f main.zip > /dev/null 2>&1
+		echo "> Updated."
 		exit 0
 	fi
 fi
 
-exit 0
+exit 1
