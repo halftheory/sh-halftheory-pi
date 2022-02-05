@@ -36,16 +36,16 @@ elif [ "$1" = "-install" ]; then
 		if has_arg "$*" "-depends" && [ ! "$(get_system)" = "Darwin" ]; then
 			BOOL_FALLBACK=false
 			if is_opengl_legacy; then
-				if ! maybe_install "cvlc" "vlc"; then
+				if ! maybe_apt_install "cvlc" "vlc"; then
 					BOOL_FALLBACK=true
 				fi
 			else
-				if ! maybe_install "omxplayer"; then
+				if ! maybe_apt_install "omxplayer"; then
 					BOOL_FALLBACK=true
 				fi
 			fi
 			if [ $BOOL_FALLBACK = true ]; then
-				maybe_install "ffplay" "ffmpeg"
+				maybe_apt_install "ffplay" "ffmpeg"
 			fi
 		fi
 		echo "> Installed."
@@ -81,6 +81,7 @@ else
 fi
 # check if already running
 if is_process_running "$STR_PROCESS"; then
+	echo "> Process '$STR_PROCESS' is already running. Exiting..."
 	exit 0
 fi
 

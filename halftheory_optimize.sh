@@ -84,10 +84,10 @@ fi
 
 if prompt "Perform apt-get upgrades"; then
 	if check_remote_host "archive.raspberrypi.org"; then
-		${MAYBE_SUDO}apt-get clean
-		${MAYBE_SUDO}apt-get update
-		${MAYBE_SUDO}apt-get upgrade
-		${MAYBE_SUDO}apt-get dist-upgrade
+		${MAYBE_SUDO}apt-get -y clean
+		${MAYBE_SUDO}apt-get -y update
+		${MAYBE_SUDO}apt-get -y upgrade
+		${MAYBE_SUDO}apt-get -y dist-upgrade
 	fi
 fi
 
@@ -158,7 +158,7 @@ fi
 if prompt "Disable man indexing"; then
 	FILE_TEST="/etc/cron.daily/man-db"
 	if [ -e "$FILE_TEST" ]; then
-		if [ "$(grep -Pzo "\#\!\/bin\/sh\nexit 0" $FILE_TEST)" = "" ]; then
+		if [ "$(grep -Pzo "\#\!\/bin\/sh\nexit 0" $FILE_TEST | xargs --null)" = "" ]; then
 			if file_replace_line_first "$FILE_TEST" "(#!/bin/sh)" "\1\nexit 0" "sudo"; then
 				echo "> Updated $(basename "$FILE_TEST")..."
 			fi
@@ -166,7 +166,7 @@ if prompt "Disable man indexing"; then
 	fi
 	FILE_TEST="/etc/cron.weekly/man-db"
 	if [ -e "$FILE_TEST" ]; then
-		if [ "$(grep -Pzo "\#\!\/bin\/sh\nexit 0" $FILE_TEST)" = "" ]; then
+		if [ "$(grep -Pzo "\#\!\/bin\/sh\nexit 0" $FILE_TEST | xargs --null)" = "" ]; then
 			if file_replace_line_first "$FILE_TEST" "(#!/bin/sh)" "\1\nexit 0" "sudo"; then
 				echo "> Updated $(basename "$FILE_TEST")..."
 			fi
@@ -236,14 +236,11 @@ fi
 
 if prompt "Delete mac system files"; then
 	ARR_TEST=(
-		"boot"
-		"home"
+		"/boot"
+		"/home"
 	)
 	for STR_TEST in "${ARR_TEST[@]}"; do
-		${MAYBE_SUDO}find /$STR_TEST -type f -name "._*" -delete
-		${MAYBE_SUDO}find /$STR_TEST -type f -name "*DS_Store*" -delete
-		${MAYBE_SUDO}find /$STR_TEST -type d -name ".fseventsd" | while read STR_FILE; do ${MAYBE_SUDO}rm -Rf $STR_FILE; done
-		${MAYBE_SUDO}find /$STR_TEST -type d -name ".Spotlight-V100" | while read STR_FILE; do ${MAYBE_SUDO}rm -Rf $STR_FILE; done
+		delete_macos_system_files "$STR_TEST" "sudo"
 	done
 fi
 

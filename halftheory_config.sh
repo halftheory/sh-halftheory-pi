@@ -25,7 +25,7 @@ elif [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
 		# depends
 		if has_arg "$*" "-depends" && [ ! "$(get_system)" = "Darwin" ]; then
-			maybe_install "ufw"
+			maybe_apt_install "ufw"
 		fi
 		echo "> Installed."
 		exit 0
@@ -112,7 +112,7 @@ case "$1" in
 		fi
 		case "$2" in
 			on)
-				if maybe_install "ufw"; then
+				if maybe_apt_install "ufw"; then
 					echo "> Enabling firewall..."
 					${MAYBE_SUDO}ufw allow ssh
 					${MAYBE_SUDO}ufw default allow incoming

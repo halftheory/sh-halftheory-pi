@@ -44,7 +44,7 @@ function scripts_uninstall()
 
 # git
 if [ -d "$DIRNAME/.git" ]; then
-	if maybe_install "git"; then
+	if maybe_apt_install "git"; then
 		scripts_uninstall
 		(cd $DIRNAME && git fetch && git pull)
 		if scripts_install; then
@@ -59,7 +59,7 @@ STR_REPO="$(basename "$DIRNAME")"
 if [ "$STR_REPO" = "" ]; then
 	exit 1
 fi
-if maybe_install "wget"; then
+if maybe_apt_install "wget"; then
 	wget -q https://github.com/halftheory/$STR_REPO/archive/refs/heads/main.zip
 	if [ $? -eq 0 ] && [ -f "main.zip" ]; then
 		if is_which "unzip"; then
