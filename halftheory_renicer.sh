@@ -48,19 +48,20 @@ elif [ "$1" = "-uninstall" ]; then
 	fi
 fi
 
-echo "> Listening for $1..."
+echo "> Listening for '$1'..."
 PID_OLD=0
+PID_NEW=""
 while true; do
 	PID_NEW="$(get_pidof "$1")"
 	if ! is_int "$PID_NEW"; then
 		PID_OLD=0
-	elif [ ! "$PID_NEW" = "$PID_OLD" ]; then
+		echo "> Listening for '$1'..."
+	elif (($PID_NEW != $PID_OLD)); then
 		${MAYBE_SUDO}renice -n -20 -p $PID_NEW > /dev/null 2>&1
 		PID_OLD="$PID_NEW"
-		echo "> $1 is now top priority..."
+		echo "> Process '$1' is now top priority..."
 		# not persistent
 		if [ -z $2 ]; then
-			#exit 0
 			break
 		fi
 	fi

@@ -61,15 +61,15 @@ elif [ "$1" = "-install" ]; then
 				echo "> Error: python pip required."
 				exit 1
 			fi
-			if ! maybe_install "cmake"; then
+			if ! maybe_apt_install "cmake"; then
 				echo "> Error: cmake required."
 				exit 1
 			fi
-			if ! maybe_install "wget"; then
+			if ! maybe_apt_install "wget"; then
 				echo "> Error: wget required."
 				exit 1
 			fi
-			if ! maybe_install "7z" "p7zip-full"; then
+			if ! maybe_apt_install "7z" "p7zip-full"; then
 				echo "> Error: 7z required."
 				exit 1
 			fi
