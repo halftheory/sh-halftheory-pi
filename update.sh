@@ -70,14 +70,13 @@ if maybe_apt_install "wget"; then
 		if [ -d "$DIRNAME/$STR_REPO-main" ]; then
 			chmod $CHMOD_DIRS $DIRNAME/$STR_REPO-main
 			scripts_uninstall
-			cp -Rf $DIRNAME/$STR_REPO-main/ $DIRNAME/
+			cp -Rf $DIRNAME/$STR_REPO-main/* $DIRNAME/
 			rm -Rf $DIRNAME/$STR_REPO-main > /dev/null 2>&1
 			if scripts_install; then
 				echo "> Updated."
 			fi
 		fi
 		rm -f main.zip > /dev/null 2>&1
-		echo "> Updated."
 		exit 0
 	fi
 fi
