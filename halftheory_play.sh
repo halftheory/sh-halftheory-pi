@@ -91,7 +91,7 @@ elif [ "$STR_PROCESS" = "omxplayer.bin" ]; then
 fi
 
 if [ $BOOL_FALLBACK = true ] || [ "$STR_PROCESS" = "ffplay" ]; then
-	CMD_TEST="ffplay -hide_banner -v quiet -fs -fast -framedrop -infbuf -fflags discardcorrupt -autoexit $(quote_string_with_spaces "$*")"
+	CMD_TEST="ffplay -hide_banner -v quiet -fs -noborder -fast -framedrop -infbuf -fflags discardcorrupt -autoexit $(quote_string_with_spaces "$*")"
 	eval "$CMD_TEST"
 fi
 

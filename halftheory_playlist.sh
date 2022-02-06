@@ -107,14 +107,15 @@ case "$STR_PROCESS" in
 	"ffplay")
 		# make a playlist file
 		FILE_TEST="$DIR_WORKING/$STR_PROCESS.txt"
-		if [ ! -d "$DIR_WORKING" ]; then
-			mkdir -p $DIR_WORKING
-			chmod $CHMOD_DIRS $DIR_WORKING
-		else
-			rm $FILE_TEST > /dev/null 2>&1
+		if [ ! -f "$FILE_TEST" ]; then
+			if [ ! -d "$DIR_WORKING" ]; then
+				mkdir -p $DIR_WORKING
+				chmod $CHMOD_DIRS $DIR_WORKING
+			fi
+			touch $FILE_TEST
+			chmod $CHMOD_FILES $FILE_TEST
 		fi
-		touch $FILE_TEST
-		chmod $CHMOD_FILES $FILE_TEST
+		echo > $FILE_TEST
 		file_add_line $FILE_TEST "ffconcat version 1.0"
 		# add the list
 		LIST="$(get_file_list_csv "$*")"
@@ -125,7 +126,7 @@ case "$STR_PROCESS" in
 		for STR in "${ARR_TEST[@]}"; do
 			file_add_line $FILE_TEST "file $(quote_string_with_spaces "$STR")"
 		done
-		CMD_TEST="ffplay -hide_banner -v quiet -fs -fast -framedrop -infbuf -fflags discardcorrupt -safe 0 -loop 0 -f concat -i $(quote_string_with_spaces "$FILE_TEST")"
+		CMD_TEST="ffplay -hide_banner -v quiet -fs -noborder -fast -framedrop -infbuf -fflags discardcorrupt -safe 0 -loop 0 -f concat -i $(quote_string_with_spaces "$FILE_TEST")"
 		eval "$CMD_TEST"
 		sleep 1
 		rm $FILE_TEST > /dev/null 2>&1
