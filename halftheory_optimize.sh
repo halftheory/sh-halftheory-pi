@@ -109,8 +109,8 @@ if prompt "Reduce bash/tmux buffer"; then
 	)
 	if ! file_contains_line "$FILE_TEST" "${ARR_TEST[0]}"; then
 		if [ ! -f "$FILE_TEST" ]; then
-			touch $FILE_TEST
-			chmod $CHMOD_FILES $FILE_TEST
+			touch "$FILE_TEST"
+			chmod $CHMOD_FILES "$FILE_TEST"
 		else
 			if [ "$(get_system)" = "Darwin" ]; then
 				sed -i '' -E "s/HISTSIZE=[0-9]*/${ARR_TEST[0]}/g" $FILE_TEST
@@ -133,8 +133,8 @@ if prompt "Reduce bash/tmux buffer"; then
 		)
 		if ! file_contains_line "$FILE_TEST" "${ARR_TEST[0]}"; then
 			if [ ! -f "$FILE_TEST" ]; then
-				touch $FILE_TEST
-				chmod $CHMOD_FILES $FILE_TEST
+				touch "$FILE_TEST"
+				chmod $CHMOD_FILES "$FILE_TEST"
 			fi
 			for STR_TEST in "${ARR_TEST[@]}"; do
 				file_add_line "$FILE_TEST" "$STR_TEST"
@@ -198,8 +198,8 @@ if prompt "Use all 4 CPUs for compiling"; then
 	FILE_TEST="$DIR_LOCAL/.profile"
 	if ! file_contains_line "$FILE_TEST" "$STR_TEST"; then
 		if [ ! -f "$FILE_TEST" ]; then
-			touch $FILE_TEST
-			chmod $CHMOD_FILES $FILE_TEST
+			touch "$FILE_TEST"
+			chmod $CHMOD_FILES "$FILE_TEST"
 		fi
 		if file_add_line "$FILE_TEST" "$STR_TEST"; then
 			echo "> Updated $(basename "$FILE_TEST")..."

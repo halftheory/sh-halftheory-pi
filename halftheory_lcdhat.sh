@@ -87,17 +87,17 @@ elif [ "$1" = "-install" ]; then
 			done
 
 			if [ ! -d "$DIR_WORKING" ]; then
-				mkdir -p $DIR_WORKING
-				chmod $CHMOD_DIRS $DIR_WORKING
+				mkdir -p "$DIR_WORKING"
+				chmod $CHMOD_DIRS "$DIR_WORKING"
 			fi
 
 			# install driver
 			wget -q http://www.airspayce.com/mikem/bcm2835/bcm2835-1.71.tar.gz
 			if [ $? -eq 0 ] && [ -f "bcm2835-1.71.tar.gz" ]; then
-				tar vxfz bcm2835-1.71.tar.gz -C $DIR_WORKING
+				tar vxfz bcm2835-1.71.tar.gz -C "$DIR_WORKING"
 				if [ -d "$DIR_WORKING/bcm2835-1.71" ]; then
-					chmod $CHMOD_DIRS $DIR_WORKING/bcm2835-1.71
-					(cd $DIR_WORKING/bcm2835-1.71 && ${MAYBE_SUDO}./configure && ${MAYBE_SUDO}make && ${MAYBE_SUDO}make check && ${MAYBE_SUDO}make install)
+					chmod $CHMOD_DIRS "$DIR_WORKING/bcm2835-1.71"
+					(cd "$DIR_WORKING/bcm2835-1.71" && ${MAYBE_SUDO}./configure && ${MAYBE_SUDO}make && ${MAYBE_SUDO}make check && ${MAYBE_SUDO}make install)
 				fi
 				rm -f bcm2835-1.71.tar.gz > /dev/null 2>&1
 			else
@@ -110,10 +110,10 @@ elif [ "$1" = "-install" ]; then
 			if [ $? -eq 0 ] && [ -f "Waveshare_fbcp.7z" ]; then
 				7z x Waveshare_fbcp.7z -o$DIR_WORKING/waveshare_fbcp
 				if [ -d "$DIR_WORKING/waveshare_fbcp" ]; then
-					chmod $CHMOD_DIRS $DIR_WORKING/waveshare_fbcp
-					mkdir -p $DIR_WORKING/waveshare_fbcp/build
-					chmod $CHMOD_DIRS $DIR_WORKING/waveshare_fbcp/build
-					(cd $DIR_WORKING/waveshare_fbcp/build && cmake -DSPI_BUS_CLOCK_DIVISOR=20 -DWAVESHARE_1INCH44_LCD_HAT=ON -DDISPLAY_BREAK_ASPECT_RATIO_WHEN_SCALING=ON -DSTATISTICS=0 .. && make -j)
+					chmod $CHMOD_DIRS "$DIR_WORKING/waveshare_fbcp"
+					mkdir -p "$DIR_WORKING/waveshare_fbcp/build"
+					chmod $CHMOD_DIRS "$DIR_WORKING/waveshare_fbcp/build"
+					(cd "$DIR_WORKING/waveshare_fbcp/build" && cmake -DSPI_BUS_CLOCK_DIVISOR=20 -DWAVESHARE_1INCH44_LCD_HAT=ON -DDISPLAY_BREAK_ASPECT_RATIO_WHEN_SCALING=ON -DSTATISTICS=0 .. && make -j)
 				fi
 				rm -f Waveshare_fbcp.7z > /dev/null 2>&1
 			fi
@@ -127,7 +127,7 @@ elif [ "$1" = "-install" ]; then
 			# Download to tmpfile because might already be running
 			curl -f -s -o /tmp/$FILE_RETROGAME https://raw.githubusercontent.com/adafruit/Adafruit-Retrogame/master/retrogame
 			if [ $? -eq 0 ] && [ -f "/tmp/$FILE_RETROGAME" ]; then
-				mv /tmp/$FILE_RETROGAME $DIR_WORKING
+				mv /tmp/$FILE_RETROGAME "$DIR_WORKING"
 			fi
 			if ! script_install "$DIR_WORKING/$FILE_RETROGAME" "$DIR_SCRIPTS/$FILE_RETROGAME" "sudo"; then
 				echo "> Error: Could not install $FILE_RETROGAME."
@@ -135,8 +135,8 @@ elif [ "$1" = "-install" ]; then
 			fi
 			FILE_TEST="/etc/udev/rules.d/10-retrogame.rules"
 			if [ ! -f "$FILE_TEST" ]; then
-				${MAYBE_SUDO}touch $FILE_TEST
-				${MAYBE_SUDO}chmod $CHMOD_FILES $FILE_TEST
+				${MAYBE_SUDO}touch "$FILE_TEST"
+				${MAYBE_SUDO}chmod $CHMOD_FILES "$FILE_TEST"
 			fi
 			if ! file_add_line "$FILE_TEST" "SUBSYSTEM==\"input\", ATTRS{name}==\"retrogame\", ENV{ID_INPUT_KEYBOARD}=\"1\"" "sudo"; then
 				echo "> Error: Could not install $FILE_TEST."
@@ -144,8 +144,8 @@ elif [ "$1" = "-install" ]; then
 			fi
 			FILE_TEST="$DIR_WORKING/$FILE_RETROGAME.cfg"
 			if [ ! -f "$FILE_TEST" ]; then
-				touch $FILE_TEST
-				chmod $CHMOD_FILES $FILE_TEST
+				touch "$FILE_TEST"
+				chmod $CHMOD_FILES "$FILE_TEST"
 			fi
 			STR_TEST="
 UP 6
@@ -177,7 +177,7 @@ elif [ "$1" = "-uninstall" ]; then
 			script_uninstall "$DIR_WORKING/waveshare_fbcp/build/$FILE_FBCP" "$DIR_SCRIPTS/$FILE_FBCP" "sudo"
 			script_uninstall "$DIR_WORKING/$FILE_RETROGAME" "$DIR_SCRIPTS/$FILE_RETROGAME" "sudo"
 			${MAYBE_SUDO}rm -f /etc/udev/rules.d/10-retrogame.rules > /dev/null 2>&1
-			rm -Rf $DIR_WORKING > /dev/null 2>&1
+			rm -Rf "$DIR_WORKING" > /dev/null 2>&1
 		fi
 		echo "> Uninstalled."
 		exit 0
@@ -229,17 +229,17 @@ case "$1" in
 			file_add_line_rclocal_before_exit "$FILE_FBCP &"
 			# start process
 			if ! is_process_running "$FILE_FBCP" && is_which "tmux"; then
-				tmux kill-ses -t $FILE_FBCP > /dev/null 2>&1
+				kill_tmux "$FILE_FBCP"
 				maybe_tmux "${MAYBE_SUDO}$FILE_FBCP" "$FILE_FBCP"
 			fi
 		fi
 		if [ $HAS_RETROGAME = true ]; then
 			# add to rc.local
-			file_add_line_rclocal_before_exit "$FILE_RETROGAME $DIR_WORKING/$FILE_RETROGAME.cfg &"
+			file_add_line_rclocal_before_exit "$FILE_RETROGAME \"$DIR_WORKING/$FILE_RETROGAME.cfg\" &"
 			# start process
 			if ! is_process_running "$FILE_RETROGAME" && is_which "tmux"; then
-				tmux kill-ses -t $FILE_RETROGAME > /dev/null 2>&1
-				maybe_tmux "${MAYBE_SUDO}$FILE_RETROGAME $DIR_WORKING/$FILE_RETROGAME.cfg" "$FILE_RETROGAME"
+				kill_tmux "$FILE_RETROGAME"
+				maybe_tmux "${MAYBE_SUDO}$FILE_RETROGAME \"$DIR_WORKING/$FILE_RETROGAME.cfg\"" "$FILE_RETROGAME"
 			fi
 		fi
 		echo "> $SCRIPT_ALIAS will be $1 after rebooting."
@@ -257,22 +257,14 @@ case "$1" in
 		done
 		# delete from rc.local
 		file_delete_line "$FILE_RCLOCAL" "$FILE_FBCP &" "sudo"
-		file_delete_line "$FILE_RCLOCAL" "$FILE_RETROGAME $DIR_WORKING/$FILE_RETROGAME.cfg &" "sudo"
+		file_delete_line "$FILE_RCLOCAL" "$FILE_RETROGAME \"$DIR_WORKING/$FILE_RETROGAME.cfg\" &" "sudo"
 		if [ $HAS_FBCP = true ]; then
-			# destroy tmux session
-			if is_which "tmux"; then
-				tmux kill-ses -t $FILE_FBCP > /dev/null 2>&1
-			fi
-			# kill process
-			${MAYBE_SUDO}killall $FILE_FBCP > /dev/null 2>&1
+			kill_tmux "$FILE_FBCP"
+			kill_process "$FILE_FBCP"
 		fi
 		if [ $HAS_RETROGAME = true ]; then
-			# destroy tmux session
-			if is_which "tmux"; then
-				tmux kill-ses -t $FILE_RETROGAME > /dev/null 2>&1
-			fi
-			# kill process
-			${MAYBE_SUDO}killall $FILE_RETROGAME > /dev/null 2>&1
+			kill_tmux "$FILE_RETROGAME"
+			kill_process "$FILE_RETROGAME"
 		fi
 		echo "> $SCRIPT_ALIAS will be $1 after rebooting."
 		;;
