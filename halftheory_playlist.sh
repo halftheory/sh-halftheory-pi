@@ -58,7 +58,7 @@ elif [ "$1" = "-install" ]; then
 elif [ "$1" = "-uninstall" ]; then
 	if script_uninstall "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
 		if has_arg "$*" "-depends"; then
-			rm -Rf $DIR_WORKING > /dev/null 2>&1
+			rm -Rf "$DIR_WORKING" > /dev/null 2>&1
 		fi
 		echo "> Uninstalled."
 		exit 0
@@ -109,14 +109,14 @@ case "$STR_PROCESS" in
 		FILE_TEST="$DIR_WORKING/$STR_PROCESS.txt"
 		if [ ! -f "$FILE_TEST" ]; then
 			if [ ! -d "$DIR_WORKING" ]; then
-				mkdir -p $DIR_WORKING
-				chmod $CHMOD_DIRS $DIR_WORKING
+				mkdir -p "$DIR_WORKING"
+				chmod $CHMOD_DIRS "$DIR_WORKING"
 			fi
-			touch $FILE_TEST
-			chmod $CHMOD_FILES $FILE_TEST
+			touch "$FILE_TEST"
+			chmod $CHMOD_FILES "$FILE_TEST"
 		fi
-		echo > $FILE_TEST
-		file_add_line $FILE_TEST "ffconcat version 1.0"
+		echo > "$FILE_TEST"
+		file_add_line "$FILE_TEST" "ffconcat version 1.0"
 		# add the list
 		LIST="$(get_file_list_csv "$*")"
 		ARR_TEST=()
@@ -124,12 +124,12 @@ case "$STR_PROCESS" in
 		IFS="," read -r -a ARR_TEST <<< "$LIST"
 		IFS="$IFS_OLD"
 		for STR in "${ARR_TEST[@]}"; do
-			file_add_line $FILE_TEST "file $(quote_string_with_spaces "$STR")"
+			file_add_line "$FILE_TEST" "file $(quote_string_with_spaces "$STR")"
 		done
 		CMD_TEST="ffplay -hide_banner -v quiet -fs -noborder -fast -framedrop -infbuf -fflags discardcorrupt -safe 0 -loop 0 -f concat -i $(quote_string_with_spaces "$FILE_TEST")"
 		eval "$CMD_TEST"
 		sleep 1
-		rm $FILE_TEST > /dev/null 2>&1
+		rm -f "$FILE_TEST" > /dev/null 2>&1
 		;;
 esac
 
