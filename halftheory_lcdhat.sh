@@ -209,6 +209,10 @@ case "$1" in
 		if [ $HAS_FBCP = true ]; then
 			# add to config.txt
 			file_add_line_config_after_all "hdmi_force_hotplug=1"
+			if ! is_opengl_legacy; then
+				file_comment_line "$FILE_CONFIG" "dtoverlay=vc4-kms-v3d" "sudo"
+				file_comment_line "$FILE_CONFIG" "dtoverlay=vc4-kms-v3d-pi4" "sudo"
+			fi
 			read -p "> Resize screen to LCD size? [y]: " PROMPT_TEST
 			PROMPT_TEST="${PROMPT_TEST:-y}"
 			if [ "$PROMPT_TEST" = "y" ]; then
@@ -226,7 +230,7 @@ case "$1" in
 			# start process
 			if ! is_process_running "$FILE_FBCP" && is_which "tmux"; then
 				tmux kill-ses -t $FILE_FBCP > /dev/null 2>&1
-				eval "$(cmd_tmux "${MAYBE_SUDO}$FILE_FBCP" "$FILE_FBCP")"
+				maybe_tmux "${MAYBE_SUDO}$FILE_FBCP" "$FILE_FBCP"
 			fi
 		fi
 		if [ $HAS_RETROGAME = true ]; then
@@ -235,7 +239,7 @@ case "$1" in
 			# start process
 			if ! is_process_running "$FILE_RETROGAME" && is_which "tmux"; then
 				tmux kill-ses -t $FILE_RETROGAME > /dev/null 2>&1
-				eval "$(cmd_tmux "${MAYBE_SUDO}$FILE_RETROGAME $DIR_WORKING/$FILE_RETROGAME.cfg" "$FILE_RETROGAME")"
+				maybe_tmux "${MAYBE_SUDO}$FILE_RETROGAME $DIR_WORKING/$FILE_RETROGAME.cfg" "$FILE_RETROGAME"
 			fi
 		fi
 		echo "> $SCRIPT_ALIAS will be $1 after rebooting."

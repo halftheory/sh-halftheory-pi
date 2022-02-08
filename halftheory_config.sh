@@ -143,8 +143,9 @@ case "$1" in
 			on)
 				# hdmi_force_hotplug=1
 				file_add_line_config_after_all "hdmi_force_hotplug=1"
-				# comment sdtv_mode
+				# comment sdtv_mode, disable_overscan
 				file_replace_line "$FILE_CONFIG" "(sdtv_mode=[0-9]*)" "#\1" "sudo"
+				file_comment_line "$FILE_CONFIG" "disable_overscan=1" "sudo"
 				# rc.local
 				if is_vcgencmd_working; then
 					file_comment_line "$FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
