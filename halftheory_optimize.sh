@@ -76,7 +76,7 @@ if prompt "Set locale to en_US.UTF-8"; then
 	if [ ! "$(locale 2>&1 | grep -v $STR_TEST)" = "" ]; then
 		export LANG=$STR_TEST
 		export LANGUAGE=$STR_TEST
-		#${MAYBE_SUDO}dpkg-reconfigure locales
+		${MAYBE_SUDO}dpkg-reconfigure locales
 		${MAYBE_SUDO}locale-gen --purge $STR_TEST
 		${MAYBE_SUDO}update-locale LANG=$STR_TEST LANGUAGE=$STR_TEST LC_CTYPE=$STR_TEST LC_ALL=$STR_TEST
 	fi
