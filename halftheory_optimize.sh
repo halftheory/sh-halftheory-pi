@@ -58,6 +58,7 @@ function prompt()
 	if [ $VAR_FORCE = true ]; then
 		return 0
 	fi
+	local PROMPT_TEST=""
 	read -p "> $1? [y]: " PROMPT_TEST
 	PROMPT_TEST="${PROMPT_TEST:-y}"
 	if [ ! "$PROMPT_TEST" = "y" ]; then
@@ -242,6 +243,59 @@ if prompt "Delete mac system files"; then
 	for STR_TEST in "${ARR_TEST[@]}"; do
 		delete_macos_system_files "$STR_TEST" "sudo"
 	done
+fi
+
+if prompt "Install usbmount"; then
+	BOOL_TEST=false
+	CMD_TEST="${MAYBE_SUDO}apt list --installed 2>&1 | grep \"usbmount/\""
+	CMD_TEST="$(eval "$CMD_TEST")"
+	if [ "$CMD_TEST" = "" ] && check_remote_host "archive.raspberrypi.org"; then
+		${MAYBE_SUDO}apt-get -y install git debhelper build-essential eject ntfs-3g exfat-fuse exfat-utils
+		sleep 1
+		DIR_TEST="$(get_user_dir "$(whoami)")"
+		if [ ! "$DIR_TEST" = "" ]; then
+			DIR_TEST="$(get_realpath "$DIR_TEST")/"
+			(cd "$DIR_TEST" && git clone https://github.com/nicokaiser/usbmount/)
+		else
+			git clone https://github.com/nicokaiser/usbmount/
+		fi
+		if [ $? -eq 0 ] && [ -d "${DIR_TEST}usbmount" ]; then
+			(cd "${DIR_TEST}usbmount" && ${MAYBE_SUDO}dpkg-buildpackage -us -uc -b)
+			sleep 1
+			if [ -f "${DIR_TEST}usbmount_0.0.24_all.deb" ]; then
+				${MAYBE_SUDO}dpkg -i ${DIR_TEST}usbmount_0.0.24_all.deb
+				${MAYBE_SUDO}apt-get -y install -f
+				sleep 1
+				BOOL_TEST=true
+			fi
+			if [ ! -f "/etc/usbmount/usbmount.conf" ] && [ -f "${DIR_TEST}usbmount/usbmount.conf" ]; then
+				${MAYBE_SUDO}cp -f "${DIR_TEST}usbmount/usbmount.conf" "/etc/usbmount/usbmount.conf" > /dev/null 2>&1
+			fi
+			${MAYBE_SUDO}rm -Rf "${DIR_TEST}usbmount" > /dev/null 2>&1
+		fi
+		# usbmount.conf
+		FILE_TEST="/etc/usbmount/usbmount.conf"
+		if [ -e "$FILE_TEST" ]; then
+			if file_replace_line_first "$FILE_TEST" "FILESYSTEMS=\"vfat ext2 ext3 ext4 hfsplus\"" "FILESYSTEMS=\"vfat ext2 ext3 ext4 hfsplus fuseblk ntfs-3g exfat\"" "sudo"; then
+				echo "> Updated $(basename "$FILE_TEST")..."
+			fi
+		fi
+		# systemd-udevd.service
+		FILE_TEST="/lib/systemd/system/systemd-udevd.service"
+		if [ -e "$FILE_TEST" ]; then
+			if file_replace_line_first "$FILE_TEST" "PrivateMounts=yes" "PrivateMounts=no" "sudo"; then
+				echo "> Updated $(basename "$FILE_TEST")..."
+			elif ! file_contains_line "$FILE_TEST" "PrivateMounts=no"; then
+				file_add_line "$FILE_TEST" "PrivateMounts=no" "sudo"
+				echo "> Updated $(basename "$FILE_TEST")..."
+			fi
+		fi
+	fi
+	if [ $BOOL_TEST = true ]; then
+		echo "> Installed. You must reboot."
+	else
+		echo "> Not installed."
+	fi
 fi
 
 if prompt "Disable video"; then
