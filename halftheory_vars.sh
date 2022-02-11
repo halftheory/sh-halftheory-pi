@@ -15,6 +15,7 @@ else
 fi
 
 # vars
+DIRNAME="$(get_realpath "$DIRNAME")"
 MAYBE_SUDO="$(maybe_sudo)"
 OWN_LOCAL="$(whoami)"
 GRP_LOCAL="$(get_file_grp "$0")"
@@ -26,7 +27,6 @@ FILE_CONFIG="/boot/config.txt"
 FILE_RCLOCAL="/etc/rc.local"
 
 # functions
-
 function is_opengl_legacy()
 {
 	if file_contains_line "$FILE_CONFIG" "dtoverlay=vc4-kms-v3d" || file_contains_line "$FILE_CONFIG" "dtoverlay=vc4-kms-v3d-pi4"; then
@@ -37,7 +37,7 @@ function is_opengl_legacy()
 
 function is_vcgencmd_working()
 {
-	STR_TEST="$(get_os_version_id)"
+	local STR_TEST="$(get_os_version_id)"
 	if is_which "vcgencmd" && is_int "$STR_TEST" && (($STR_TEST < 11)); then
 		return 0
 	fi
