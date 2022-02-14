@@ -17,8 +17,8 @@ fi
 SCRIPT_ALIAS="optimize"
 
 # usage
-if [ -z $1 ]; then
-	echo "> Usage: $SCRIPT_ALIAS [all|force]"
+if [ "$1" = "-help" ]; then
+	echo "> Usage: $SCRIPT_ALIAS [force]"
 	echo "> Warning: This script is not designed to undo these changes."
 	exit 1
 # install
@@ -56,6 +56,9 @@ function prompt()
 		return 0
 	fi
 	if [ $VAR_FORCE = true ]; then
+		if [ "$2" ] && [ "$2" = "no-force" ]; then
+			return 1
+		fi
 		return 0
 	fi
 	local PROMPT_TEST=""
@@ -298,7 +301,7 @@ if prompt "Install usbmount"; then
 	fi
 fi
 
-if prompt "Disable video"; then
+if prompt "Disable video" "no-force"; then
 	if is_which "tvservice" && is_opengl_legacy; then
 		if file_add_line_rclocal_before_exit "tvservice -o"; then
 			echo "> Updated $(basename "$FILE_RCLOCAL")..."
