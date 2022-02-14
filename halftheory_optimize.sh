@@ -226,6 +226,12 @@ if prompt "Enable overclocking"; then
 	echo "> Updated $(basename "$FILE_CONFIG")..."
 fi
 
+if prompt "Turn off temperature warning"; then
+	if file_add_line_config_after_all "avoid_warnings=1"; then
+		echo "> Updated $(basename "$FILE_CONFIG")..."
+	fi
+fi
+
 if prompt "Improve Wi-Fi performance - Disable WLAN adaptor power management"; then
 	if file_add_line_rclocal_before_exit "iwconfig wlan0 power off"; then
 		echo "> Updated $(basename "$FILE_RCLOCAL")..."

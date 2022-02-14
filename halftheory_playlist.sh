@@ -15,7 +15,7 @@ else
 fi
 
 SCRIPT_ALIAS="playlist"
-DIR_WORKING="$(get_realpath "$DIRNAME")/$SCRIPT_ALIAS"
+DIR_WORKING="$DIRNAME/$SCRIPT_ALIAS"
 
 # usage
 if [ -z "$1" ] || [ "$1" = "-help" ]; then
@@ -87,20 +87,22 @@ fi
 
 case "$STR_PROCESS" in
 	"vlc")
-		CMD_TEST="VLC_VERBOSE=0 cvlc $(get_file_list_quotes "$*") --no-osd --fullscreen --align 0 --video-on-top --preferred-resolution -1 --no-interact --loop --no-play-and-exit"
+		CMD_TEST="VLC_VERBOSE=0 cvlc $(get_file_list_video_quotes "$*") --no-osd --fullscreen --align 0 --video-on-top --preferred-resolution -1 --no-interact --loop --no-play-and-exit"
 		eval "$CMD_TEST"
 		;;
 
 	"omxplayer.bin")
-		LIST="$(get_file_list_csv "$*")"
+		LIST="$(get_file_list_video_csv "$*")"
 		ARR_TEST=()
 		IFS_OLD="$IFS"
 		IFS="," read -r -a ARR_TEST <<< "$LIST"
 		IFS="$IFS_OLD"
-		for STR in "${ARR_TEST[@]}"; do
-			clear
-			CMD_TEST="omxplayer -b -o local --no-osd --timeout 5 $(quote_string_with_spaces "$STR") > /dev/null"
-			eval "$CMD_TEST"
+		while true; do
+			for STR in "${ARR_TEST[@]}"; do
+				clear
+				CMD_TEST="omxplayer -b -o local --no-osd --timeout 5 $(quote_string_with_spaces "$STR") > /dev/null"
+				eval "$CMD_TEST"
+			done
 		done
 		;;
 
@@ -115,10 +117,9 @@ case "$STR_PROCESS" in
 			touch "$FILE_TEST"
 			chmod $CHMOD_FILES "$FILE_TEST"
 		fi
-		echo > "$FILE_TEST"
-		file_add_line "$FILE_TEST" "ffconcat version 1.0"
+		echo "ffconcat version 1.0" > "$FILE_TEST"
 		# add the list
-		LIST="$(get_file_list_csv "$*")"
+		LIST="$(get_file_list_video_csv "$*")"
 		ARR_TEST=()
 		IFS_OLD="$IFS"
 		IFS="," read -r -a ARR_TEST <<< "$LIST"
