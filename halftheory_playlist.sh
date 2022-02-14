@@ -18,7 +18,7 @@ SCRIPT_ALIAS="playlist"
 DIR_WORKING="$(get_realpath "$DIRNAME")/$SCRIPT_ALIAS"
 
 # usage
-if [ -z "$1" ]; then
+if [ -z "$1" ] || [ "$1" = "-help" ]; then
     echo "> Usage: $SCRIPT_ALIAS [files]"
     echo ""
 	echo "> Optional:"

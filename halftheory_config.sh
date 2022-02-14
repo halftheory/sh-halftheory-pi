@@ -17,7 +17,7 @@ fi
 SCRIPT_ALIAS="config"
 
 # usage
-if [ -z $1 ]; then
+if [ -z $1 ] || [ "$1" = "-help" ]; then
 	echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
 	exit 1
 # install

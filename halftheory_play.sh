@@ -17,7 +17,7 @@ fi
 SCRIPT_ALIAS="play"
 
 # usage
-if [ -z "$1" ]; then
+if [ -z "$1" ] || [ "$1" = "-help" ]; then
     echo "> Usage: $SCRIPT_ALIAS [file]"
     exit 1
 # install
