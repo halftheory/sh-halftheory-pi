@@ -14,18 +14,20 @@ else
 	exit 1
 fi
 
-# prompt
-read -p "> Continue update? [y]: " PROMPT_TEST
-PROMPT_TEST="${PROMPT_TEST:-y}"
-if [ ! "$PROMPT_TEST" = "y" ]; then
-	exit 0
+if ! has_arg "$*" "-force"; then
+	# prompt
+	read -p "> Continue update? [y]: " PROMPT_TEST
+	PROMPT_TEST="${PROMPT_TEST:-y}"
+	if [ ! "$PROMPT_TEST" = "y" ]; then
+		exit 0
+	fi
 fi
 
 # functions
 function scripts_install()
 {
 	if script_install "$DIRNAME/install.sh"; then
-		$DIRNAME/install.sh
+		$DIRNAME/install.sh -force
 		return 0
 	fi
 	return 1
@@ -33,7 +35,7 @@ function scripts_install()
 function scripts_uninstall()
 {
 	if script_install "$DIRNAME/install.sh"; then
-		$DIRNAME/install.sh -uninstall
+		$DIRNAME/install.sh -uninstall -force
 		return 0
 	fi
 	return 1
