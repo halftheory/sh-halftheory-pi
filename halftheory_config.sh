@@ -76,7 +76,7 @@ case "$1" in
 		esac
 		sleep 1
 		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
-			echo "> Updated $(basename "$FILE_CONFIG")..."
+			echo "> Updated '$(basename "$FILE_CONFIG")'."
 		fi
 		echo "> $1 will be $2 after rebooting."
 		;;
@@ -99,7 +99,7 @@ case "$1" in
 		esac
 		sleep 1
 		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
-			echo "> Updated $(basename "$FILE_CONFIG")..."
+			echo "> Updated '$(basename "$FILE_CONFIG")'."
 		fi
 		echo "> $1 will be $2 after rebooting."
 		;;
@@ -158,9 +158,9 @@ case "$1" in
 				# sdtv_mode=18
 				if ! file_contains_line "$FILE_CONFIG" "sdtv_mode=18"; then
 					if [ "$(get_system)" = "Darwin" ]; then
-						${MAYBE_SUDO}sed -i '' -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" $FILE_CONFIG
+						${MAYBE_SUDO}sed -i '' -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" "$FILE_CONFIG"
 					else
-						${MAYBE_SUDO}sed -i -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" $FILE_CONFIG
+						${MAYBE_SUDO}sed -i -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" "$FILE_CONFIG"
 					fi
 					file_add_line_config_after_all "sdtv_mode=18"
 				fi
@@ -180,10 +180,10 @@ case "$1" in
 		fi
 		sleep 1
 		if [ ! "$FILESIZE_CONFIG" = "$(get_file_size "$FILE_CONFIG")" ]; then
-			echo "> Updated $(basename "$FILE_CONFIG")..."
+			echo "> Updated '$(basename "$FILE_CONFIG")'."
 		fi
 		if [ ! "$FILESIZE_RCLOCAL" = "$(get_file_size "$FILE_RCLOCAL")" ]; then
-			echo "> Updated $(basename "$FILE_RCLOCAL")..."
+			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
 		fi
 		echo "> $1 is now $2. This will persist after rebooting."
 		;;
@@ -210,7 +210,7 @@ case "$1" in
 		esac
 		sleep 1
 		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
-			echo "> Updated $(basename "$FILE_CONFIG")..."
+			echo "> Updated '$(basename "$FILE_CONFIG")'."
 		fi
 		echo "> $1 is now $2. This will persist after rebooting."
 		;;
