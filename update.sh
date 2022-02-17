@@ -27,7 +27,7 @@ fi
 function scripts_install()
 {
 	if script_install "$DIRNAME/install.sh"; then
-		$DIRNAME/install.sh -force
+		$DIRNAME/install.sh -install -force
 		return 0
 	fi
 	return 1
