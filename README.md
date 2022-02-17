@@ -1,32 +1,33 @@
 # sh-halftheory-pi
-Common scripts to run on the Raspberry Pi.
+Helper scripts to run on the raspberrypi.
 
-- config
-- lcdhat
-- optimize
-- play
-- playlist
-- renicer
+Command | Function
+:--- | :---
+config | Turn off/on common features - audio, bluetooth, hdmi, etc.
+optimize | Common optimizations - set easy passwords, stop logging, overclocking, etc.
+play | Play a video.
+playlist | Play a collection of videos in an endless loop.
+renicer | Give top priority to a process.
 
 ## Install
-```bash
-# install git
-sudo apt-get -y install git
-# download the files
-git clone git@github.com:halftheory/sh-halftheory-pi.git
+```
+cd~
+sudo apt-get -y install git tmux
+git clone https://github.com/halftheory/sh-halftheory-pi
 cd sh-halftheory-pi
-# make the install script executable
-sudo chmod +x install.sh
-# run the install script
+chmod +x install.sh
 ./install.sh
 ```
+
+## Operation
+Type `[command]` without arguments or `[command] -help` to see usage options.
+
 ## Update
-```bash
-# run the update script
+```
 ./update.sh
 ```
+
 ## Uninstall
-```bash
-# run the uninstall script
+```
 ./install.sh -uninstall
 ```
