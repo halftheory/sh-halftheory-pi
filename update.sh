@@ -45,7 +45,7 @@ function scripts_uninstall()
 if [ -d "$DIRNAME/.git" ]; then
 	if maybe_apt_install "git"; then
 		scripts_uninstall
-		(cd "$DIRNAME" && git fetch && git pull)
+		(cd "$DIRNAME" && git fetch && git reset --hard HEAD && git pull)
 		if scripts_install; then
 			echo "> Updated."
 			exit 0
