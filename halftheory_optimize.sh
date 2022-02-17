@@ -42,20 +42,18 @@ elif [ "$1" = "-uninstall" ]; then
 fi
 
 # vars
-
-VAR_FORCE=false
+BOOL_FORCE=false
 if [ $1 ] && [ "$1" = "force" ]; then
-	VAR_FORCE=true
+	BOOL_FORCE=true
 fi
 
 # functions
-
 function prompt()
 {
 	if [ -z "$1" ]; then
-		return 0
+		return 1
 	fi
-	if [ $VAR_FORCE = true ]; then
+	if [ $BOOL_FORCE = true ]; then
 		if [ "$2" ] && [ "$2" = "no-force" ]; then
 			return 1
 		fi
@@ -127,7 +125,7 @@ if prompt "Reduce bash/tmux buffer"; then
 		for STR_TEST in "${ARR_TEST[@]}"; do
 			file_add_line "$FILE_TEST" "$STR_TEST"
 		done
-		echo "> Updated $(basename "$FILE_TEST")..."
+		echo "> Updated '$(basename "$FILE_TEST")'."
 	fi
 	if is_which "tmux"; then
 		FILE_TEST="$DIR_LOCAL/.tmux.conf"
@@ -143,7 +141,7 @@ if prompt "Reduce bash/tmux buffer"; then
 			for STR_TEST in "${ARR_TEST[@]}"; do
 				file_add_line "$FILE_TEST" "$STR_TEST"
 			done
-			echo "> Updated $(basename "$FILE_TEST")..."
+			echo "> Updated '$(basename "$FILE_TEST")'."
 		fi
 	fi
 fi
@@ -154,7 +152,7 @@ if prompt "Disable logging"; then
 		if ! file_contains_line "$FILE_TEST" "*.*\t\t~" && [ "$(grep -e "\*\.\*\t\t~" $FILE_TEST)" = "" ] && [ "$(grep -e "\*\.\*\s\s~" $FILE_TEST)" = "" ]; then
 			${MAYBE_SUDO}systemctl disable rsyslog
 			${MAYBE_SUDO}perl -0777 -pi -e "s/(#### RULES ####\n###############\n)/\1*.*\t\t~\n/sg" $FILE_TEST
-			echo "> Updated $(basename "$FILE_TEST")..."
+			echo "> Updated '$(basename "$FILE_TEST")'."
 		fi
 	fi
 fi
@@ -164,7 +162,7 @@ if prompt "Disable man indexing"; then
 	if [ -e "$FILE_TEST" ]; then
 		if [ "$(grep -Pzo "\#\!\/bin\/sh\nexit 0" $FILE_TEST | xargs --null)" = "" ]; then
 			if file_replace_line_first "$FILE_TEST" "(#!/bin/sh)" "\1\nexit 0" "sudo"; then
-				echo "> Updated $(basename "$FILE_TEST")..."
+				echo "> Updated '$(basename "$FILE_TEST")'."
 			fi
 		fi
 	fi
@@ -172,7 +170,7 @@ if prompt "Disable man indexing"; then
 	if [ -e "$FILE_TEST" ]; then
 		if [ "$(grep -Pzo "\#\!\/bin\/sh\nexit 0" $FILE_TEST | xargs --null)" = "" ]; then
 			if file_replace_line_first "$FILE_TEST" "(#!/bin/sh)" "\1\nexit 0" "sudo"; then
-				echo "> Updated $(basename "$FILE_TEST")..."
+				echo "> Updated '$(basename "$FILE_TEST")'."
 			fi
 		fi
 	fi
@@ -191,7 +189,7 @@ if prompt "tmpfs - Write to RAM instead of the local disk"; then
 				file_add_line "$FILE_TEST" "$STR_TEST" "sudo"
 			done
 			mount | grep tmpfs
-			echo "> Updated $(basename "$FILE_TEST")..."
+			echo "> Updated '$(basename "$FILE_TEST")'."
 		fi
 	fi
 fi
@@ -206,11 +204,11 @@ if prompt "Use all 4 CPUs for compiling"; then
 			chmod $CHMOD_FILES "$FILE_TEST"
 		fi
 		if file_add_line "$FILE_TEST" "$STR_TEST"; then
-			echo "> Updated $(basename "$FILE_TEST")..."
+			echo "> Updated '$(basename "$FILE_TEST")'."
 		fi
 	fi
 	if file_add_line "/etc/environment" "$STR_TEST" "sudo"; then
-		echo "> Updated /etc/environment..."
+		echo "> Updated '/etc/environment'."
 	fi
 fi
 
@@ -223,24 +221,35 @@ if prompt "Enable overclocking"; then
 	for STR_TEST in "${ARR_TEST[@]}"; do
 		file_add_line_config_after_all "$STR_TEST"
 	done
-	echo "> Updated $(basename "$FILE_CONFIG")..."
+	echo "> Updated '$(basename "$FILE_CONFIG")'."
 fi
 
 if prompt "Turn off temperature warning"; then
 	if file_add_line_config_after_all "avoid_warnings=1"; then
-		echo "> Updated $(basename "$FILE_CONFIG")..."
+		echo "> Updated '$(basename "$FILE_CONFIG")'."
+	fi
+fi
+
+if prompt "Turn off top raspberries"; then
+	FILE_TEST="/boot/cmdline.txt"
+	if [ -e "$FILE_TEST" ]; then
+		STR_TEST="logo.nologo"
+		if [ "$(grep -e "$STR_TEST" "$FILE_TEST")" = "" ]; then
+			${MAYBE_SUDO}sed -i -E "\$s/(\s*)$/ $STR_TEST\1/g" "$FILE_TEST"
+			echo "> Updated '$(basename "$FILE_TEST")'."
+		fi
 	fi
 fi
 
 if prompt "Improve Wi-Fi performance - Disable WLAN adaptor power management"; then
 	if file_add_line_rclocal_before_exit "iwconfig wlan0 power off"; then
-		echo "> Updated $(basename "$FILE_RCLOCAL")..."
+		echo "> Updated '$(basename "$FILE_RCLOCAL")'."
 	fi
 fi
 
 if prompt "Turn off blinking cursor"; then
 	if file_add_line_rclocal_before_exit "echo 0 > /sys/class/graphics/fbcon/cursor_blink"; then
-		echo "> Updated $(basename "$FILE_RCLOCAL")..."
+		echo "> Updated '$(basename "$FILE_RCLOCAL")'."
 	fi
 fi
 
@@ -286,17 +295,17 @@ if prompt "Install usbmount"; then
 		FILE_TEST="/etc/usbmount/usbmount.conf"
 		if [ -e "$FILE_TEST" ]; then
 			if file_replace_line_first "$FILE_TEST" "FILESYSTEMS=\"vfat ext2 ext3 ext4 hfsplus\"" "FILESYSTEMS=\"vfat ext2 ext3 ext4 hfsplus fuseblk ntfs-3g exfat\"" "sudo"; then
-				echo "> Updated $(basename "$FILE_TEST")..."
+				echo "> Updated '$(basename "$FILE_TEST")'."
 			fi
 		fi
 		# systemd-udevd.service
 		FILE_TEST="/lib/systemd/system/systemd-udevd.service"
 		if [ -e "$FILE_TEST" ]; then
 			if file_replace_line_first "$FILE_TEST" "PrivateMounts=yes" "PrivateMounts=no" "sudo"; then
-				echo "> Updated $(basename "$FILE_TEST")..."
+				echo "> Updated '$(basename "$FILE_TEST")'."
 			elif ! file_contains_line "$FILE_TEST" "PrivateMounts=no"; then
 				file_add_line "$FILE_TEST" "PrivateMounts=no" "sudo"
-				echo "> Updated $(basename "$FILE_TEST")..."
+				echo "> Updated '$(basename "$FILE_TEST")'."
 			fi
 		fi
 	fi
@@ -310,18 +319,18 @@ fi
 if prompt "Disable video" "no-force"; then
 	if is_which "tvservice" && is_opengl_legacy; then
 		if file_add_line_rclocal_before_exit "tvservice -o"; then
-			echo "> Updated $(basename "$FILE_RCLOCAL")..."
+			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
 		fi
 		tvservice -o
 	elif is_which "xset"; then
 		if file_add_line_rclocal_before_exit "xset dpms force off"; then
-			echo "> Updated $(basename "$FILE_RCLOCAL")..."
+			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
 		fi
 		xset dpms force off
 	fi
 	if is_vcgencmd_working; then
 		if file_add_line_rclocal_before_exit "vcgencmd display_power 0"; then
-			echo "> Updated $(basename "$FILE_RCLOCAL")..."
+			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
 		fi
 		vcgencmd display_power 0
 	fi

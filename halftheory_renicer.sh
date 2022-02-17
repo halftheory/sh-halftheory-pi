@@ -59,7 +59,7 @@ while true; do
 	elif (($PID_NEW != $PID_OLD)); then
 		${MAYBE_SUDO}renice -n -20 -p $PID_NEW > /dev/null 2>&1
 		PID_OLD="$PID_NEW"
-		echo "> Process '$1' is now top priority..."
+		echo "> Process '$1' is now top priority."
 		# not persistent
 		if [ -z $2 ]; then
 			break
