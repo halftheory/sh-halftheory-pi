@@ -18,7 +18,7 @@ SCRIPT_ALIAS="config"
 
 # usage
 if [ -z $1 ] || [ "$1" = "-help" ]; then
-	echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
+	echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network|overclock] [on|off]"
 	exit 1
 # install
 elif [ "$1" = "-install" ]; then
@@ -48,7 +48,7 @@ case "$2" in
 	on | off)
 		;;
 	*)
-		echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network] [on|off]"
+		echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network|overclock] [on|off]"
 		exit 1
 		;;
 esac
@@ -213,6 +213,32 @@ case "$1" in
 			echo "> Updated '$(basename "$FILE_CONFIG")'."
 		fi
 		echo "> $1 is now $2. This will persist after rebooting."
+		;;
+
+	overclock)
+		FILESIZE="$(get_file_size "$FILE_CONFIG")"
+		ARR_TEST=(
+			"arm_boost=1"
+			"gpu_freq=600"
+			"over_voltage=5"
+		)
+		case "$2" in
+			on)
+				for STR_TEST in "${ARR_TEST[@]}"; do
+					file_add_line_config_after_all "$STR_TEST"
+				done
+				;;
+			off)
+				for STR_TEST in "${ARR_TEST[@]}"; do
+					file_comment_line "$FILE_CONFIG" "$STR_TEST" "sudo"
+				done
+				;;
+		esac
+		sleep 1
+		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
+			echo "> Updated '$(basename "$FILE_CONFIG")'."
+		fi
+		echo "> $1 will be $2 after rebooting."
 		;;
 
 	*)
