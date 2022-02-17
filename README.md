@@ -4,14 +4,14 @@ Helper scripts to run on the raspberrypi.
 Command | Function
 :--- | :---
 config | Turn off/on common features - audio, bluetooth, hdmi, etc.
-optimize | Common optimizations - set easy passwords, stop logging, overclocking, etc.
+optimize | Common optimizations - set easy passwords, apt updates, stop logging, etc.
 play | Play a video.
 playlist | Play a collection of videos in an endless loop.
 renicer | Give top priority to a process.
 
 ## Install
 ```
-cd~
+cd ~
 sudo apt-get -y install git tmux
 git clone https://github.com/halftheory/sh-halftheory-pi
 cd sh-halftheory-pi

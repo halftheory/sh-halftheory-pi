@@ -212,18 +212,6 @@ if prompt "Use all 4 CPUs for compiling"; then
 	fi
 fi
 
-if prompt "Enable overclocking"; then
-	ARR_TEST=(
-		"arm_boost=1"
-		"gpu_freq=600"
-		"over_voltage=5"
-	)
-	for STR_TEST in "${ARR_TEST[@]}"; do
-		file_add_line_config_after_all "$STR_TEST"
-	done
-	echo "> Updated '$(basename "$FILE_CONFIG")'."
-fi
-
 if prompt "Turn off temperature warning"; then
 	if file_add_line_config_after_all "avoid_warnings=1"; then
 		echo "> Updated '$(basename "$FILE_CONFIG")'."
