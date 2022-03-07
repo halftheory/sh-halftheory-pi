@@ -24,9 +24,9 @@ if [ -z "$1" ] || [ "$1" = "-help" ]; then
 	echo "> Optional:"
 	echo "crontab -e"
 	if is_which "tmux"; then
-		echo "* * * * * $(cmd_tmux "$SCRIPT_ALIAS [files]" "$SCRIPT_ALIAS")"
+		echo "* * * * * $(cmd_tmux "$DIR_SCRIPTS/$SCRIPT_ALIAS [files]" "$SCRIPT_ALIAS")"
 	else
-		echo "* * * * * $SCRIPT_ALIAS [files] > /dev/null 2>&1"
+		echo "* * * * * $DIR_SCRIPTS/$SCRIPT_ALIAS [files] > /dev/null 2>&1"
 	fi
     exit 1
 # install

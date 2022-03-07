@@ -23,9 +23,9 @@ if [ -z $1 ] || [ "$1" = "-help" ]; then
 	echo "> Optional:"
 	echo "${MAYBE_SUDO}crontab -e"
 	if is_which "tmux"; then
-		echo "@reboot tmux new -d -s $SCRIPT_ALIAS '$SCRIPT_ALIAS [process] [persistent]' > /dev/null 2>&1"
+		echo "@reboot tmux new -d -s $SCRIPT_ALIAS '$DIR_SCRIPTS/$SCRIPT_ALIAS [process] [persistent]' > /dev/null 2>&1"
 	else
-		echo "@reboot $SCRIPT_ALIAS [process] [persistent] > /dev/null 2>&1"
+		echo "@reboot $DIR_SCRIPTS/$SCRIPT_ALIAS [process] [persistent] > /dev/null 2>&1"
 	fi
     exit 1
 # install
