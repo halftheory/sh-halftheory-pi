@@ -80,6 +80,24 @@ function delete_macos_system_files()
 	return 0
 }
 
+function delete_windows_system_files()
+{
+	# DIR [SUDO]
+	if [ -z "$1" ]; then
+		return 1
+	fi
+	local STR_TEST="$(get_realpath "$1")"
+	if [ ! -d "$STR_TEST" ]; then
+		return 1
+	fi
+	local STR_SUDO=""
+	if [ $2 ] && [ "$2" = "sudo" ]; then
+		STR_SUDO="$(maybe_sudo)"
+	fi
+	${STR_SUDO}find "$STR_TEST" -type f -name "desktop.ini" -o -name "Desktop.ini" -o -name "thumbs.db" -o -name "Thumbs.db" -o -name "folder.jpg" | while read STR_FILE; do ${STR_SUDO}rm -f "$STR_FILE"; done > /dev/null 2>&1
+	return 0
+}
+
 function dir_has_files()
 {
 	# DIR
