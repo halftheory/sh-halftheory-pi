@@ -181,7 +181,7 @@ if prompt "tmpfs - Write to RAM instead of the local disk"; then
 	if [ -e "$FILE_TEST" ]; then
 		ARR_TEST=(
 			"tmpfs    /tmp    tmpfs    defaults,noatime,nosuid,size=100m    0 0"
-			"tmpfs    /var/tmp    tmpfs    defaults,noatime,nosuid,size=30m    0 0"
+			"tmpfs    /var/tmp    tmpfs    defaults,noatime,nosuid,size=100m    0 0"
 			"tmpfs    /var/log    tmpfs    defaults,noatime,nosuid,size=100m    0 0"
 		)
 		if ! file_contains_line "$FILE_TEST" "${ARR_TEST[0]}"; then
