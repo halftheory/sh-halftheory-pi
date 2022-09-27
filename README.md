@@ -4,6 +4,7 @@ Helper scripts to run on the raspberrypi.
 Command | Function
 :--- | :---
 config | Turn off/on common features - audio, bluetooth, hdmi, etc.
+ejecter | Safely unmount and power off all attached USB drives.
 optimize | Common optimizations - set easy passwords, apt updates, stop logging, etc.
 play | Play a video.
 playlist | Play a collection of videos in an endless loop.
