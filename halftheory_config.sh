@@ -196,7 +196,8 @@ case "$1" in
 			"dtparam=act_led_trigger=none"
 			"dtparam=act_led_activelow=off"
 		)
-		if [ ! "$(tail /proc/cpuinfo | grep 'Raspberry Pi 4')" = "" ]; then
+		STR_TEST="$(get_rpi_model_id)"
+		if is_int "$STR_TEST" && (($STR_TEST > 3)); then
 			ARR_TEST+=("dtparam=eth_led0=4")
 			ARR_TEST+=("dtparam=eth_led1=4")
 		else

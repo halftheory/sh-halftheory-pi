@@ -44,6 +44,54 @@ function is_vcgencmd_working()
 	return 1
 }
 
+function get_rpi_model()
+{
+	local STR_TEST=""
+	if [ -e "/proc/device-tree/model" ]; then
+		read -r STR_TEST < /proc/device-tree/model
+    	if [[ "$STR_TEST" == "Raspberry Pi "* ]]; then
+			STR_TEST="${STR_TEST##*Raspberry Pi }"
+			STR_TEST="$(trim_space "${STR_TEST//Model /}")"
+			if [ ! "$STR_TEST" = "" ]; then
+				echo "$STR_TEST"
+				return 0
+			fi
+    	fi
+    fi
+	if [ -e "/proc/cpuinfo" ]; then
+		STR_TEST="$(grep -e "Raspberry Pi " /proc/cpuinfo)"
+		if [ ! "$STR_TEST" = "" ]; then
+			STR_TEST="${STR_TEST##*Raspberry Pi }"
+			STR_TEST="$(trim_space "${STR_TEST//Model /}")"
+			if [ ! "$STR_TEST" = "" ]; then
+				echo "$STR_TEST"
+				return 0
+			fi
+		fi
+	fi
+	return 1
+}
+
+function get_rpi_model_id()
+{
+	local STR_TEST=""
+	if [ -e "/proc/device-tree/model" ]; then
+		STR_TEST="$(head /proc/device-tree/model | awk '{print $3}')"
+		if is_int "$STR_TEST"; then
+			echo "$STR_TEST"
+			return 0
+		fi
+	fi
+	if [ -e "/proc/cpuinfo" ]; then
+		STR_TEST="$(grep -e "Raspberry Pi " /proc/cpuinfo | awk '{print $5}')"
+		if is_int "$STR_TEST"; then
+			echo "$STR_TEST"
+			return 0
+		fi
+	fi
+	return 1
+}
+
 function file_add_line_config_after_all()
 {
 	# STRING
