@@ -18,7 +18,7 @@ SCRIPT_ALIAS="config"
 
 # usage
 if [ -z $1 ] || [ "$1" = "-help" ]; then
-	echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network|overclock] [on|off]"
+	echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|led|network|overclock] [on|off]"
 	exit 1
 # install
 elif [ "$1" = "-install" ]; then
@@ -48,7 +48,7 @@ case "$2" in
 	on | off)
 		;;
 	*)
-		echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|network|overclock] [on|off]"
+		echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|led|network|overclock] [on|off]"
 		exit 1
 		;;
 esac
@@ -186,6 +186,40 @@ case "$1" in
 			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
 		fi
 		echo "> $1 is now $2. This will persist after rebooting."
+		;;
+
+	led)
+		FILESIZE="$(get_file_size "$FILE_CONFIG")"
+		ARR_TEST=(
+			"dtparam=pwr_led_trigger=none"
+			"dtparam=pwr_led_activelow=off"
+			"dtparam=act_led_trigger=none"
+			"dtparam=act_led_activelow=off"
+		)
+		if [ ! "$(tail /proc/cpuinfo | grep 'Raspberry Pi 4')" = "" ]; then
+			ARR_TEST+=("dtparam=eth_led0=4")
+			ARR_TEST+=("dtparam=eth_led1=4")
+		else
+			ARR_TEST+=("dtparam=eth_led0=14")
+			ARR_TEST+=("dtparam=eth_led1=14")
+		fi
+		case "$2" in
+			on)
+				for STR_TEST in "${ARR_TEST[@]}"; do
+					file_add_line_config_after_all "$STR_TEST"
+				done
+				;;
+			off)
+				for STR_TEST in "${ARR_TEST[@]}"; do
+					file_comment_line "$FILE_CONFIG" "$STR_TEST" "sudo"
+				done
+				;;
+		esac
+		sleep 1
+		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
+			echo "> Updated '$(basename "$FILE_CONFIG")'."
+		fi
+		echo "> $1 will be $2 after rebooting."
 		;;
 
 	network)
