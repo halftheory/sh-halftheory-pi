@@ -206,12 +206,12 @@ case "$1" in
 		case "$2" in
 			on)
 				for STR_TEST in "${ARR_TEST[@]}"; do
-					file_add_line_config_after_all "$STR_TEST"
+					file_comment_line "$FILE_CONFIG" "$STR_TEST" "sudo"
 				done
 				;;
 			off)
 				for STR_TEST in "${ARR_TEST[@]}"; do
-					file_comment_line "$FILE_CONFIG" "$STR_TEST" "sudo"
+					file_add_line_config_after_all "$STR_TEST"
 				done
 				;;
 		esac
