@@ -49,15 +49,15 @@ function get_rpi_model()
 	local STR_TEST=""
 	if [ -e "/proc/device-tree/model" ]; then
 		read -r STR_TEST < /proc/device-tree/model
-    	if [[ "$STR_TEST" == "Raspberry Pi "* ]]; then
+		if [[ "$STR_TEST" == "Raspberry Pi "* ]]; then
 			STR_TEST="${STR_TEST##*Raspberry Pi }"
 			STR_TEST="$(trim_space "${STR_TEST//Model /}")"
 			if [ ! "$STR_TEST" = "" ]; then
 				echo "$STR_TEST"
 				return 0
 			fi
-    	fi
-    fi
+		fi
+	fi
 	if [ -e "/proc/cpuinfo" ]; then
 		STR_TEST="$(grep -e "Raspberry Pi " /proc/cpuinfo)"
 		if [ ! "$STR_TEST" = "" ]; then
@@ -80,6 +80,14 @@ function get_rpi_model_id()
 		if is_int "$STR_TEST"; then
 			echo "$STR_TEST"
 			return 0
+		elif [ "$STR_TEST" = "Zero" ]; then
+			echo "0"
+			return 0
+		elif [ "$STR_TEST" = "Model" ]; then
+			if [[ "$(get_rpi_model)" = "B "* ]]; then
+				echo "1"
+				return 0
+			fi
 		fi
 	fi
 	if [ -e "/proc/cpuinfo" ]; then
@@ -87,6 +95,14 @@ function get_rpi_model_id()
 		if is_int "$STR_TEST"; then
 			echo "$STR_TEST"
 			return 0
+		elif [ "$STR_TEST" = "Zero" ]; then
+			echo "0"
+			return 0
+		elif [ "$STR_TEST" = "Model" ]; then
+			if [[ "$(get_rpi_model)" = "B "* ]]; then
+				echo "1"
+				return 0
+			fi
 		fi
 	fi
 	return 1

@@ -189,8 +189,9 @@ case "$1" in
 		;;
 
 	led)
-		FILESIZE="$(get_file_size "$FILE_CONFIG")"
-		ARR_TEST=(
+		FILESIZE_CONFIG="$(get_file_size "$FILE_CONFIG")"
+		FILESIZE_RCLOCAL="$(get_file_size "$FILE_RCLOCAL")"
+		ARR_CONFIG=(
 			"dtparam=pwr_led_trigger=none"
 			"dtparam=pwr_led_activelow=off"
 			"dtparam=act_led_trigger=none"
@@ -198,27 +199,57 @@ case "$1" in
 		)
 		STR_TEST="$(get_rpi_model_id)"
 		if is_int "$STR_TEST" && (($STR_TEST > 3)); then
-			ARR_TEST+=("dtparam=eth_led0=4")
-			ARR_TEST+=("dtparam=eth_led1=4")
+			ARR_CONFIG+=("dtparam=eth_led0=4")
+			ARR_CONFIG+=("dtparam=eth_led1=4")
 		else
-			ARR_TEST+=("dtparam=eth_led0=14")
-			ARR_TEST+=("dtparam=eth_led1=14")
+			ARR_CONFIG+=("dtparam=eth_led0=14")
+			ARR_CONFIG+=("dtparam=eth_led1=14")
+		fi
+		ARR_RCLOCAL=()
+		DIR_TEST="/sys/class/leds"
+		if [ -e "$DIR_TEST" ]; then
+			IFS_OLD="$IFS"
+			IFS=$'\n'
+			ARR_TEST=( $(find $DIR_TEST -maxdepth 1 -type d) )
+			IFS="$IFS_OLD"
+			if [ ! "$ARR_TEST" = "" ]; then
+				for STR in "${ARR_TEST[@]}"; do
+					if [ "$STR" = "$DIR_TEST" ]; then
+						continue
+					fi
+					if [ -e "$STR/trigger" ]; then
+						ARR_RCLOCAL+=("echo none > $STR/trigger")
+					fi
+					if [ -e "$STR/brightness" ]; then
+						ARR_RCLOCAL+=("echo 0 > $STR/brightness")
+					fi
+				done
+			fi
 		fi
 		case "$2" in
 			on)
-				for STR_TEST in "${ARR_TEST[@]}"; do
-					file_comment_line "$FILE_CONFIG" "$STR_TEST" "sudo"
+				for STR in "${ARR_CONFIG[@]}"; do
+					file_comment_line "$FILE_CONFIG" "$STR" "sudo"
+				done
+				for STR in "${ARR_RCLOCAL[@]}"; do
+					file_comment_line "$FILE_RCLOCAL" "$STR" "sudo"
 				done
 				;;
 			off)
-				for STR_TEST in "${ARR_TEST[@]}"; do
-					file_add_line_config_after_all "$STR_TEST"
+				for STR in "${ARR_CONFIG[@]}"; do
+					file_add_line_config_after_all "$STR"
+				done
+				for STR in "${ARR_RCLOCAL[@]}"; do
+					file_add_line_rclocal_before_exit "$STR"
 				done
 				;;
 		esac
 		sleep 1
-		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
+		if [ ! "$FILESIZE_CONFIG" = "$(get_file_size "$FILE_CONFIG")" ]; then
 			echo "> Updated '$(basename "$FILE_CONFIG")'."
+		fi
+		if [ ! "$FILESIZE_RCLOCAL" = "$(get_file_size "$FILE_RCLOCAL")" ]; then
+			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
 		fi
 		echo "> $1 will be $2 after rebooting."
 		;;
@@ -259,13 +290,13 @@ case "$1" in
 		)
 		case "$2" in
 			on)
-				for STR_TEST in "${ARR_TEST[@]}"; do
-					file_add_line_config_after_all "$STR_TEST"
+				for STR in "${ARR_TEST[@]}"; do
+					file_add_line_config_after_all "$STR"
 				done
 				;;
 			off)
-				for STR_TEST in "${ARR_TEST[@]}"; do
-					file_comment_line "$FILE_CONFIG" "$STR_TEST" "sudo"
+				for STR in "${ARR_TEST[@]}"; do
+					file_comment_line "$FILE_CONFIG" "$STR" "sudo"
 				done
 				;;
 		esac
