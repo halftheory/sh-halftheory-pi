@@ -207,10 +207,10 @@ case "$1" in
 		fi
 		ARR_RCLOCAL=()
 		DIR_TEST="/sys/class/leds"
-		if [ -e "$DIR_TEST" ]; then
+		if [ -d "$DIR_TEST" ]; then
 			IFS_OLD="$IFS"
 			IFS=$'\n'
-			ARR_TEST=( $(find $DIR_TEST -maxdepth 1 -type d) )
+			ARR_TEST=( $(find $DIR_TEST -maxdepth 1) )
 			IFS="$IFS_OLD"
 			if [ ! "$ARR_TEST" = "" ]; then
 				for STR in "${ARR_TEST[@]}"; do
