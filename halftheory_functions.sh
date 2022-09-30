@@ -165,13 +165,13 @@ function escape_spaces()
 
 function file_add_line()
 {
-    # FILE STRING [SUDO] [BACKUP]
+	# FILE STRING [SUDO] [BACKUP]
 	if [ -z "$2" ]; then
-        return 1
-    fi
-    if [ ! -e "$1" ]; then
-        return 1
-    fi
+		return 1
+	fi
+	if [ ! -e "$1" ]; then
+		return 1
+	fi
 	if file_contains_line "$1" "$2"; then
 		return 0
 	fi
@@ -206,13 +206,13 @@ function file_add_line()
 
 function file_comment_line()
 {
-    # FILE SEARCH [SUDO] [BACKUP]
+	# FILE SEARCH [SUDO] [BACKUP]
 	if [ -z "$2" ]; then
-        return 1
-    fi
-    if [ ! -e "$1" ]; then
-        return 1
-    fi
+		return 1
+	fi
+	if [ ! -e "$1" ]; then
+		return 1
+	fi
 	if ! file_contains_line "$1" "$2"; then
 		return 1
 	fi
@@ -258,18 +258,18 @@ function file_contains_line()
 
 function file_delete_line()
 {
-    # FILE SEARCH [SUDO] [BACKUP]
+	# FILE SEARCH [SUDO] [BACKUP]
 	if [ -z "$2" ]; then
-        return 1
-    fi
-    if [ ! -e "$1" ]; then
-        return 1
-    fi
-    local BOOL_REGEX=false
-    if is_string_regex "$2"; then
-    	BOOL_REGEX=true
-    	local FILESIZE="$(get_file_size "$1")"
-    fi
+		return 1
+	fi
+	if [ ! -e "$1" ]; then
+		return 1
+	fi
+	local BOOL_REGEX=false
+	if is_string_regex "$2"; then
+		BOOL_REGEX=true
+		local FILESIZE="$(get_file_size "$1")"
+	fi
 	if [ $BOOL_REGEX = false ] && ! file_contains_line "$1" "$2"; then
 		return 1
 	fi
@@ -281,8 +281,8 @@ function file_delete_line()
 	if [ $4 ]; then
 		STR_BACKUP=".bak"
 	fi
-    if [ "$(get_system)" = "Darwin" ]; then
-    	if [ "$STR_BACKUP" = "" ]; then
+	if [ "$(get_system)" = "Darwin" ]; then
+		if [ "$STR_BACKUP" = "" ]; then
 			${STR_SUDO}sed -i '' -E "/$(escape_slashes "$2")/d" "$1"
 		else
 			${STR_SUDO}sed -i${STR_BACKUP} -E "/$(escape_slashes "$2")/d" "$1"
@@ -300,18 +300,18 @@ function file_delete_line()
 
 function file_replace_line()
 {
-    # FILE SEARCH REPLACE [SUDO] [BACKUP]
+	# FILE SEARCH REPLACE [SUDO] [BACKUP]
 	if [ -z "$3" ]; then
-        return 1
-    fi
-    if [ ! -e "$1" ]; then
-        return 1
-    fi
-    local BOOL_REGEX=false
-    if is_string_regex "$2"; then
-    	BOOL_REGEX=true
-    	local FILESIZE="$(get_file_size "$1")"
-    fi
+		return 1
+	fi
+	if [ ! -e "$1" ]; then
+		return 1
+	fi
+	local BOOL_REGEX=false
+	if is_string_regex "$2"; then
+		BOOL_REGEX=true
+		local FILESIZE="$(get_file_size "$1")"
+	fi
 	if [ $BOOL_REGEX = false ] && ! file_contains_line "$1" "$2"; then
 		return 1
 	fi
@@ -334,18 +334,18 @@ function file_replace_line()
 
 function file_replace_line_first()
 {
-    # FILE SEARCH REPLACE [SUDO] [BACKUP]
+	# FILE SEARCH REPLACE [SUDO] [BACKUP]
 	if [ -z "$3" ]; then
-        return 1
-    fi
-    if [ ! -e "$1" ]; then
-        return 1
-    fi
-    local BOOL_REGEX=false
-    if is_string_regex "$2"; then
-    	BOOL_REGEX=true
-    	local FILESIZE="$(get_file_size "$1")"
-    fi
+		return 1
+	fi
+	if [ ! -e "$1" ]; then
+		return 1
+	fi
+	local BOOL_REGEX=false
+	if is_string_regex "$2"; then
+		BOOL_REGEX=true
+		local FILESIZE="$(get_file_size "$1")"
+	fi
 	if [ $BOOL_REGEX = false ] && ! file_contains_line "$1" "$2"; then
 		return 1
 	fi
@@ -369,18 +369,18 @@ function file_replace_line_first()
 function file_replace_line_last()
 {
 	# TODO!
-    # FILE SEARCH REPLACE [SUDO] [BACKUP]
+	# FILE SEARCH REPLACE [SUDO] [BACKUP]
 	if [ -z "$3" ]; then
-        return 1
-    fi
-    if [ ! -e "$1" ]; then
-        return 1
-    fi
-    local BOOL_REGEX=false
-    if [[ "$2" = *\(*\)* ]]; then
-    	BOOL_REGEX=true
-    	local FILESIZE="$(get_file_size "$1")"
-    fi
+		return 1
+	fi
+	if [ ! -e "$1" ]; then
+		return 1
+	fi
+	local BOOL_REGEX=false
+	if [[ "$2" = *\(*\)* ]]; then
+		BOOL_REGEX=true
+		local FILESIZE="$(get_file_size "$1")"
+	fi
 	if [ $BOOL_REGEX = false ] && ! file_contains_line "$1" "$2"; then
 		return 1
 	fi
@@ -392,8 +392,8 @@ function file_replace_line_last()
 	if [ $5 ]; then
 		STR_BACKUP=".bak"
 	fi
-    if [ "$(get_system)" = "Darwin" ]; then
-    	if [ "$STR_BACKUP" = "" ]; then
+	if [ "$(get_system)" = "Darwin" ]; then
+		if [ "$STR_BACKUP" = "" ]; then
 			${STR_SUDO}sed -i '' -E "\$s/$(escape_slashes "$2")/$(escape_slashes "$3")/g" "$1"
 		else
 			${STR_SUDO}sed -i${STR_BACKUP} -E "\$s/$(escape_slashes "$2")/$(escape_slashes "$3")/g" "$1"
@@ -906,10 +906,10 @@ function is_string_regex()
 {
 	# STRING
 	local STR_TEST="$*"
-    if [[ "$STR_TEST" = *\(*\)* ]] || [[ "$STR_TEST" = *\[*\]* ]]; then
-    	return 0
-    fi
-    return 1
+	if [[ "$STR_TEST" = *\(*\)* ]] || [[ "$STR_TEST" = *\[*\]* ]]; then
+		return 0
+	fi
+	return 1
 }
 
 function is_sudo()
@@ -1004,10 +1004,10 @@ function maybe_apt_install()
 	if [ $3 ] && [ "$3" = "exit" ]; then
 		BOOL_EXIT=true
 	fi
-    if [ ! "$(get_system)" = "Darwin" ]; then
-    	local CMD_TEST="$(maybe_sudo)apt list --installed 2>&1 | grep \"$MY_PACKAGE/\""
+	if [ ! "$(get_system)" = "Darwin" ]; then
+		local CMD_TEST="$(maybe_sudo)apt list --installed 2>&1 | grep \"$MY_PACKAGE/\""
 		CMD_TEST="$(eval "$CMD_TEST")"
-    	if [ "$CMD_TEST" = "" ]; then
+		if [ "$CMD_TEST" = "" ]; then
 			$(maybe_sudo)apt-get -y install $MY_PACKAGE
 			sleep 1
 			if ! is_which "$MY_APP"; then
@@ -1041,7 +1041,7 @@ function maybe_brew_install()
 	if [ $3 ] && [ "$3" = "exit" ]; then
 		BOOL_EXIT=true
 	fi
-    if [ "$(get_system)" = "Darwin" ] && is_which "brew"; then
+	if [ "$(get_system)" = "Darwin" ] && is_which "brew"; then
 		brew install $MY_PACKAGE
 		sleep 1
 		if ! is_which "$MY_APP"; then
@@ -1146,28 +1146,28 @@ function read_keys()
 	case "$INPUT" in
 		$'\x1B')
 			read -t $INPUT_TIMEOUT -rsn3 INPUT
-	        case "$INPUT" in
-	        	[A) KEY="UP" ;;
-	        	[B) KEY="DOWN" ;;
-	        	[C) KEY="RIGHT" ;;
-	        	[D) KEY="LEFT" ;;
+			case "$INPUT" in
+				[A) KEY="UP" ;;
+				[B) KEY="DOWN" ;;
+				[C) KEY="RIGHT" ;;
+				[D) KEY="LEFT" ;;
 				[1~) KEY="HOME" ;;
-	        	[2~) KEY="INSERT" ;;
-	        	[3~) KEY="DELETE" ;;
-	        	[4~) KEY="END" ;;
-	        	[5~) KEY="PAGEUP" ;;
-	        	[6~) KEY="PAGEDOWN" ;;
+				[2~) KEY="INSERT" ;;
+				[3~) KEY="DELETE" ;;
+				[4~) KEY="END" ;;
+				[5~) KEY="PAGEUP" ;;
+				[6~) KEY="PAGEDOWN" ;;
 				*) KEY="ESC" ;;
-	        esac
+			esac
 			;;
 		"")
-    		KEY="ENTER"
+			KEY="ENTER"
 			;;
 		" ")
-    		KEY="SPACE"
+			KEY="SPACE"
 			;;
 		*)
-    		KEY="$INPUT"
+			KEY="$INPUT"
 			if [ "$(echo $KEY | xargs)" = "" ]; then
 				KEY="TAB"
 			fi
@@ -1203,7 +1203,7 @@ function remote_file_exists()
 		return 1
 	fi
 	local CMD_TEST="$CMD_SSH \"ls $MY_FILE 2>&1 | grep 'No such file'\""
-    CMD_TEST="$(eval "$CMD_TEST")"
+	CMD_TEST="$(eval "$CMD_TEST")"
 	if [ ! "$CMD_TEST" = "" ]; then
 		return 1
 	fi

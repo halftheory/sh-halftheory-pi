@@ -18,8 +18,8 @@ SCRIPT_ALIAS="ejecter"
 
 # usage
 if [ "$1" = "-help" ]; then
-    echo "> Usage: $SCRIPT_ALIAS"
-    exit 1
+	echo "> Usage: $SCRIPT_ALIAS"
+	exit 1
 # install
 elif [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
@@ -41,42 +41,37 @@ elif [ "$1" = "-uninstall" ]; then
 fi
 
 ARR_MEDIA=()
+ARR_VOLUMES=()
+ARR_DISKS=()
+IFS_OLD="$IFS"
+IFS=$'\n'
 if dir_not_empty "/media"; then
 	ARR_MEDIA=( $(find /media -maxdepth 1 -name 'usb*') )
 fi
 ARR_VOLUMES=( $(fdisk -l | awk '{print $1}' | grep /dev/s) )
+ARR_DISKS=( $(fdisk -l | awk '{print $2}' | grep /dev/s | sed 's/:$//') )
+IFS="$IFS_OLD"
 
 if is_which "eject"; then
-	if [ ! "$ARR_MEDIA" = "" ]; then
-		for STR in "${ARR_MEDIA[@]}"; do
-			${MAYBE_SUDO}eject $STR > /dev/null 2>&1
-		done
-	fi
-	if [ ! "$ARR_VOLUMES" = "" ]; then
-		for STR in "${ARR_VOLUMES[@]}"; do
-			${MAYBE_SUDO}eject $STR > /dev/null 2>&1
-		done
-	fi
+	for STR in "${ARR_MEDIA[@]}"; do
+		${MAYBE_SUDO}eject $STR > /dev/null 2>&1
+	done
+	for STR in "${ARR_VOLUMES[@]}"; do
+		${MAYBE_SUDO}eject $STR > /dev/null 2>&1
+	done
 elif is_which "umount"; then
-	if [ ! "$ARR_MEDIA" = "" ]; then
-		for STR in "${ARR_MEDIA[@]}"; do
-			${MAYBE_SUDO}umount -a -q $STR > /dev/null 2>&1
-		done
-	fi
-	if [ ! "$ARR_VOLUMES" = "" ]; then
-		for STR in "${ARR_VOLUMES[@]}"; do
-			${MAYBE_SUDO}umount -a -q $STR > /dev/null 2>&1
-		done
-	fi
+	for STR in "${ARR_MEDIA[@]}"; do
+		${MAYBE_SUDO}umount -a -q $STR > /dev/null 2>&1
+	done
+	for STR in "${ARR_VOLUMES[@]}"; do
+		${MAYBE_SUDO}umount -a -q $STR > /dev/null 2>&1
+	done
 fi
 
 if is_which "udisksctl"; then
-	ARR_TEST=( $(fdisk -l | awk '{print $2}' | grep /dev/s | sed 's/:$//') )
-	if [ ! "$ARR_TEST" = "" ]; then
-		for STR in "${ARR_TEST[@]}"; do
-			${MAYBE_SUDO}udisksctl power-off -b $STR > /dev/null 2>&1
-		done
-	fi
+	for STR in "${ARR_DISKS[@]}"; do
+		${MAYBE_SUDO}udisksctl power-off -b $STR > /dev/null 2>&1
+	done
 fi
 
 echo "> Done."
