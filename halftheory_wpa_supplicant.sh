@@ -18,7 +18,7 @@ SCRIPT_ALIAS="wpa_supplicant"
 
 # usage
 if [ "$1" = "-help" ]; then
-	echo "> Usage: $SCRIPT_ALIAS"
+	echo "> Usage: $SCRIPT_ALIAS [directory]"
 	exit 1
 # install
 elif [ "$1" = "-install" ]; then
@@ -48,7 +48,11 @@ fi
 STR_PASS=""
 read -p "> Pass: " STR_PASS
 
-DIR_TEST="$(get_realpath ".")"
+DIR_TEST="."
+if [ "$1" ] && [ -d "$1" ]; then
+	DIR_TEST="$1"
+fi
+DIR_TEST="$(get_realpath "$DIR_TEST")"
 if [ "$DIR_TEST" = "" ]; then
 	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1
@@ -61,7 +65,11 @@ fi
 touch "$FILE_TEST"
 if [ -e "$FILE_TEST" ]; then
 	chmod $CHMOD_FILES "$FILE_TEST"
+	file_add_line "$FILE_TEST" "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev"
+	file_add_line "$FILE_TEST" "update_config=1"
+	file_add_line "$FILE_TEST" "country=US"
 	file_add_line "$FILE_TEST" "network={"
+	file_add_line "$FILE_TEST" "scan_ssid=1"
 	file_add_line "$FILE_TEST" "ssid=\"$STR_SSID\""
 	if [ "$STR_PASS" = "" ]; then
 		file_add_line "$FILE_TEST" "key_mgmt=NONE"
