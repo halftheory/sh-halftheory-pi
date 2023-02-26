@@ -62,7 +62,7 @@ FILE_TEST="$DIR_TEST/wpa_supplicant.conf"
 if [ -f "$FILE_TEST" ]; then
 	rm -f "$FILE_TEST" > /dev/null 2>&1
 fi
-touch "$FILE_TEST"
+${MAYBE_SUDO}touch "$FILE_TEST"
 if [ -e "$FILE_TEST" ]; then
 	chmod $CHMOD_FILES "$FILE_TEST"
 	file_add_line "$FILE_TEST" "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev"
