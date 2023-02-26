@@ -18,7 +18,7 @@ SCRIPT_ALIAS="config"
 
 # usage
 if [ -z $1 ] || [ "$1" = "-help" ]; then
-	echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|led|network|overclock] [on|off]"
+	echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|led|network|overclock|video] [on|off]"
 	exit 1
 # install
 elif [ "$1" = "-install" ]; then
@@ -48,7 +48,7 @@ case "$2" in
 	on | off)
 		;;
 	*)
-		echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|led|network|overclock] [on|off]"
+		echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|led|network|overclock|video] [on|off]"
 		exit 1
 		;;
 esac
@@ -305,6 +305,43 @@ case "$1" in
 			echo "> Updated '$(basename "$FILE_CONFIG")'."
 		fi
 		echo "> $1 will be $2 after rebooting."
+		;;
+
+	video)
+		FILESIZE_RCLOCAL="$(get_file_size "$FILE_RCLOCAL")"
+		case "$2" in
+			on)
+				if is_which "tvservice" && is_opengl_legacy; then
+					file_comment_line "$FILE_RCLOCAL" "tvservice -o" "sudo"
+					tvservice -p
+				elif is_which "xset"; then
+					file_comment_line "$FILE_RCLOCAL" "xset dpms force off" "sudo"
+					xset dpms force on
+				fi
+				if is_vcgencmd_working; then
+					file_comment_line "$FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
+					vcgencmd display_power 1
+				fi
+				;;
+			off)
+				if is_which "tvservice" && is_opengl_legacy; then
+					file_add_line_rclocal_before_exit "tvservice -o"
+					tvservice -o
+				elif is_which "xset"; then
+					file_add_line_rclocal_before_exit "xset dpms force off"
+					xset dpms force off
+				fi
+				if is_vcgencmd_working; then
+					file_add_line_rclocal_before_exit "vcgencmd display_power 0"
+					vcgencmd display_power 0
+				fi
+				;;
+		esac
+		sleep 1
+		if [ ! "$FILESIZE_RCLOCAL" = "$(get_file_size "$FILE_RCLOCAL")" ]; then
+			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
+		fi
+		echo "> $1 is now $2. This will persist after rebooting."
 		;;
 
 	*)
