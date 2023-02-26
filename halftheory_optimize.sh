@@ -54,6 +54,7 @@ function prompt()
 		return 1
 	fi
 	if [ $BOOL_FORCE = true ]; then
+		echo "> $1? YES"
 		return 0
 	fi
 	local PROMPT_TEST=""
