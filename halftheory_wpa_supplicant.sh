@@ -60,23 +60,23 @@ fi
 
 FILE_TEST="$DIR_TEST/wpa_supplicant.conf"
 if [ -f "$FILE_TEST" ]; then
-	rm -f "$FILE_TEST" > /dev/null 2>&1
+	${MAYBE_SUDO}rm -f "$FILE_TEST" > /dev/null 2>&1
 fi
 ${MAYBE_SUDO}touch "$FILE_TEST"
 if [ -e "$FILE_TEST" ]; then
-	chmod $CHMOD_FILES "$FILE_TEST"
-	file_add_line "$FILE_TEST" "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev"
-	file_add_line "$FILE_TEST" "update_config=1"
-	file_add_line "$FILE_TEST" "country=US"
-	file_add_line "$FILE_TEST" "network={"
-	file_add_line "$FILE_TEST" "scan_ssid=1"
-	file_add_line "$FILE_TEST" "ssid=\"$STR_SSID\""
+	${MAYBE_SUDO}chmod $CHMOD_FILES "$FILE_TEST"
+	file_add_line "$FILE_TEST" "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev" "sudo"
+	file_add_line "$FILE_TEST" "update_config=1" "sudo"
+	file_add_line "$FILE_TEST" "country=US" "sudo"
+	file_add_line "$FILE_TEST" "network={" "sudo"
+	file_add_line "$FILE_TEST" "scan_ssid=1" "sudo"
+	file_add_line "$FILE_TEST" "ssid=\"$STR_SSID\"" "sudo"
 	if [ "$STR_PASS" = "" ]; then
-		file_add_line "$FILE_TEST" "key_mgmt=NONE"
+		file_add_line "$FILE_TEST" "key_mgmt=NONE" "sudo"
 	else
-		file_add_line "$FILE_TEST" "psk=\"$STR_PASS\""
+		file_add_line "$FILE_TEST" "psk=\"$STR_PASS\"" "sudo"
 	fi
-	file_add_line "$FILE_TEST" "}"
+	file_add_line "$FILE_TEST" "}" "sudo"
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1
