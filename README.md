@@ -9,6 +9,7 @@ optimize | Common optimizations - set easy passwords, apt updates, stop logging,
 play | Play a video.
 playlist | Play a collection of videos in an endless loop.
 renicer | Wrapper for `renice`. Give top priority to a process.
+wpa_supplicant | Generator for `wpa_supplicant.conf`.
 
 ## Install
 ```
