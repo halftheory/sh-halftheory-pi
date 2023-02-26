@@ -48,8 +48,8 @@ IFS=$'\n'
 if dir_not_empty "/media"; then
 	ARR_MEDIA=( $(find /media -maxdepth 1 -name 'usb*') )
 fi
-ARR_VOLUMES=( $(fdisk -l | awk '{print $1}' | grep /dev/s) )
-ARR_DISKS=( $(fdisk -l | awk '{print $2}' | grep /dev/s | sed 's/:$//') )
+ARR_VOLUMES=( $(${MAYBE_SUDO}fdisk -l | awk '{print $1}' | grep /dev/s) )
+ARR_DISKS=( $(${MAYBE_SUDO}fdisk -l | awk '{print $2}' | grep /dev/s | sed 's/:$//') )
 IFS="$IFS_OLD"
 
 if is_which "eject"; then
