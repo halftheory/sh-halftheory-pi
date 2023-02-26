@@ -54,9 +54,6 @@ function prompt()
 		return 1
 	fi
 	if [ $BOOL_FORCE = true ]; then
-		if [ "$2" ] && [ "$2" = "no-force" ]; then
-			return 1
-		fi
 		return 0
 	fi
 	local PROMPT_TEST=""
@@ -301,26 +298,6 @@ if prompt "Install usbmount"; then
 		echo "> Installed. You must reboot."
 	else
 		echo "> Not installed."
-	fi
-fi
-
-if prompt "Disable video" "no-force"; then
-	if is_which "tvservice" && is_opengl_legacy; then
-		if file_add_line_rclocal_before_exit "tvservice -o"; then
-			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
-		fi
-		tvservice -o
-	elif is_which "xset"; then
-		if file_add_line_rclocal_before_exit "xset dpms force off"; then
-			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
-		fi
-		xset dpms force off
-	fi
-	if is_vcgencmd_working; then
-		if file_add_line_rclocal_before_exit "vcgencmd display_power 0"; then
-			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
-		fi
-		vcgencmd display_power 0
 	fi
 fi
 

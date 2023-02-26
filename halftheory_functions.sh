@@ -710,9 +710,9 @@ function get_hostname()
 function get_macos_version()
 {
 	if is_which "sw_vers"; then
-		local CMD_TEST="$(sw_vers | grep ProductVersion)"
+		local CMD_TEST="$(sw_vers -productVersion)"
 		if [ ! "$CMD_TEST" = "" ]; then
-			echo "$(trim_space "${CMD_TEST##*ProductVersion:}")"
+			echo "$(trim_space "$CMD_TEST")"
 			return 0
 		fi
 	fi
