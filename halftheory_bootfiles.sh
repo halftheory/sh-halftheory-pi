@@ -53,7 +53,7 @@ fi
 
 # ssh
 FILE_TEST="$DIR_TEST/ssh"
-read -p "> Create file '$FILE_TEST' ? [y]: " PROMPT_TEST
+read -p "> Create file '$FILE_TEST'? [y]: " PROMPT_TEST
 PROMPT_TEST="${PROMPT_TEST:-y}"
 if [ "$PROMPT_TEST" = "y" ]; then
 	${MAYBE_SUDO}touch "$FILE_TEST"
@@ -62,7 +62,7 @@ fi
 
 # userconf
 FILE_TEST="$DIR_TEST/userconf"
-read -p "> Create file '$FILE_TEST' ? [y]: " PROMPT_TEST
+read -p "> Create file '$FILE_TEST'? [y]: " PROMPT_TEST
 PROMPT_TEST="${PROMPT_TEST:-y}"
 if [ "$PROMPT_TEST" = "y" ]; then
 	read -p "> User: " STR_USERCONF_USER
@@ -78,7 +78,7 @@ fi
 
 # wpa_supplicant.conf
 FILE_TEST="$DIR_TEST/wpa_supplicant.conf"
-read -p "> Create file '$FILE_TEST' ? [y]: " PROMPT_TEST
+read -p "> Create file '$FILE_TEST'? [y]: " PROMPT_TEST
 PROMPT_TEST="${PROMPT_TEST:-y}"
 if [ "$PROMPT_TEST" = "y" ]; then
 	read -p "> SSID: " STR_WPA_SSID
