@@ -19,8 +19,8 @@ DIR_WORKING="$DIRNAME/$SCRIPT_ALIAS"
 
 # usage
 if [ -z "$1" ] || [ "$1" = "-help" ]; then
-    echo "> Usage: $SCRIPT_ALIAS [files]"
-    echo ""
+	echo "> Usage: $SCRIPT_ALIAS [files]"
+	echo ""
 	echo "> Optional:"
 	echo "crontab -e"
 	if is_which "tmux"; then
@@ -28,21 +28,17 @@ if [ -z "$1" ] || [ "$1" = "-help" ]; then
 	else
 		echo "* * * * * $DIR_SCRIPTS/$SCRIPT_ALIAS [files] > /dev/null 2>&1"
 	fi
-    exit 1
+	exit 1
 # install
 elif [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
 		# depends
 		if has_arg "$*" "-depends" && [ ! "$(get_system)" = "Darwin" ]; then
 			BOOL_FALLBACK=false
-			if is_opengl_legacy; then
-				if ! maybe_apt_install "cvlc" "vlc"; then
-					BOOL_FALLBACK=true
-				fi
-			else
-				if ! maybe_apt_install "omxplayer"; then
-					BOOL_FALLBACK=true
-				fi
+			if ! maybe_apt_install "cvlc" "vlc"; then
+				BOOL_FALLBACK=true
+			elif ! maybe_apt_install "omxplayer"; then
+				BOOL_FALLBACK=true
 			fi
 			if [ $BOOL_FALLBACK = true ]; then
 				maybe_apt_install "ffplay" "ffmpeg"
@@ -69,7 +65,7 @@ elif [ "$1" = "-uninstall" ]; then
 fi
 
 # check if able to run
-if is_which "cvlc" && is_opengl_legacy; then
+if is_which "cvlc"; then
 	STR_PROCESS="vlc"
 elif is_which "omxplayer"; then
 	STR_PROCESS="omxplayer.bin"
@@ -77,7 +73,7 @@ elif is_which "ffplay"; then
 	STR_PROCESS="ffplay"
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
-    exit 1
+	exit 1
 fi
 # check if already running
 if is_process_running "$STR_PROCESS"; then
