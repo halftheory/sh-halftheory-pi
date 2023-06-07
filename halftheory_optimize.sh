@@ -71,6 +71,20 @@ if prompt "Set all passwords to 'pi'"; then
 	echo -ne "pi\npi\n" | ${MAYBE_SUDO}passwd $OWN_LOCAL
 fi
 
+if prompt "Enable SSH login over USB"; then
+	if file_add_line_config_after_all "dtoverlay=dwc2"; then
+		echo "> Updated '$(basename "$FILE_CONFIG")'."
+	fi
+	FILE_TEST="/boot/cmdline.txt"
+	if [ -e "$FILE_TEST" ]; then
+		STR_TEST="modules-load=dwc2,g_ether"
+		if [ "$(grep -e "$STR_TEST" "$FILE_TEST")" = "" ]; then
+			${MAYBE_SUDO}sed -i -E "\$s/(\s*)$/ $STR_TEST\1/g" "$FILE_TEST"
+			echo "> Updated '$(basename "$FILE_TEST")'."
+		fi
+	fi
+fi
+
 if prompt "Set locale to en_US.UTF-8"; then
 	STR_TEST="en_US.UTF-8"
 	if [ ! "$(locale 2>&1 | grep -v $STR_TEST)" = "" ]; then

@@ -79,12 +79,12 @@ BOOL_FALLBACK=false
 if [ ! "$CMD_TEST" = "" ]; then
 	eval "$CMD_TEST &"
 	sleep 1
-	if ! is_process_running "$STR_PROCESS"; then
+	if ! is_process_running "$STR_PROCESS" && is_which "ffplay"; then
 		BOOL_FALLBACK=true
 	fi
 fi
 
-if [ $BOOL_FALLBACK = true ] || [ "$STR_PROCESS" = "ffplay" ]; then
+if [ "$STR_PROCESS" = "ffplay" ] || [ $BOOL_FALLBACK = true ]; then
 	CMD_TEST="ffplay -hide_banner -v quiet -fs -noborder -fast -framedrop -infbuf -fflags discardcorrupt -autoexit $(quote_string_with_spaces "$*")"
 	eval "$CMD_TEST"
 fi
