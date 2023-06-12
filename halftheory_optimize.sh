@@ -242,8 +242,12 @@ if prompt "Turn off top raspberries"; then
 fi
 
 if prompt "Improve Wi-Fi performance - Disable WLAN adaptor power management"; then
-	if file_add_line_rclocal_before_exit "iwconfig wlan0 power off"; then
-		echo "> Updated '$(basename "$FILE_RCLOCAL")'."
+	STR_TEST="$(ifconfig | grep wlan | awk '{print $1}')"
+	if [ ! "$STR_TEST" = "" ]; then
+		STR_TEST="${STR_TEST%:}"
+		if file_add_line_rclocal_before_exit "iwconfig $STR_TEST power off"; then
+			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
+		fi
 	fi
 fi
 
