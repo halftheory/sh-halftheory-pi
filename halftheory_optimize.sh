@@ -257,13 +257,14 @@ if prompt "Turn off blinking cursor"; then
 	fi
 fi
 
-if prompt "Delete mac system files"; then
+if prompt "Delete system files"; then
 	ARR_TEST=(
 		"/boot"
 		"/home"
 	)
 	for STR_TEST in "${ARR_TEST[@]}"; do
 		delete_macos_system_files "$STR_TEST" "sudo"
+		delete_windows_system_files "$STR_TEST" "sudo"
 	done
 fi
 
