@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# import vars
+# import environment
 CMD_TEST="$(readlink "$0")"
 if [ ! "$CMD_TEST" = "" ]; then
 	DIRNAME="$(dirname "$CMD_TEST")"
 else
 	DIRNAME="$(dirname "$0")"
 fi
-if [ -f "$DIRNAME/halftheory_vars.sh" ]; then
-	. $DIRNAME/halftheory_vars.sh
+if [ -f "$DIRNAME/halftheory_env_pi.sh" ]; then
+	. $DIRNAME/halftheory_env_pi.sh
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1

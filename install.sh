@@ -1,28 +1,27 @@
 #!/bin/bash
 
-# import vars
+# import environment
 CMD_TEST="$(readlink "$0")"
 if [ ! "$CMD_TEST" = "" ]; then
 	DIRNAME="$(dirname "$CMD_TEST")"
 else
 	DIRNAME="$(dirname "$0")"
 fi
-if [ -f "$DIRNAME/halftheory_vars.sh" ]; then
-	. $DIRNAME/halftheory_vars.sh
+if [ -f "$DIRNAME/halftheory_env.sh" ]; then
+	. $DIRNAME/halftheory_env.sh
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1
 fi
 
-# vars
-STR_ARG="$(trim_space "$*")"
-if [ "$STR_ARG" = "" ]; then
-	STR_ARG="-install"
+STR_ARG="-install"
+if has_arg "$*" "-uninstall"; then
+	STR_ARG="-uninstall"
 fi
 
+# prompt
 if ! has_arg "$*" "-force"; then
-	# prompt
-	read -p "> Continue install? ($STR_ARG) [y]: " PROMPT_TEST
+	read -p "> Continue $STR_ARG? [y]: " PROMPT_TEST
 	PROMPT_TEST="${PROMPT_TEST:-y}"
 	if [ ! "$PROMPT_TEST" = "y" ]; then
 		exit 0
@@ -30,24 +29,25 @@ if ! has_arg "$*" "-force"; then
 fi
 
 # loop through *.sh
-LIST="$(get_file_list_csv $DIRNAME/*.sh)"
-ARR_TEST=()
 IFS_OLD="$IFS"
-IFS="," read -r -a ARR_TEST <<< "$LIST"
+IFS="," read -r -a ARR_TEST <<< "$(get_file_list_csv $DIRNAME/*.sh)"
 IFS="$IFS_OLD"
 for FILE in "${ARR_TEST[@]}"; do
-	chmod $CHMOD_FILES "$FILE"
-	# skip
-	if [[ "$FILE" = *halftheory_functions* ]] || [[ "$FILE" = *halftheory_vars* ]]; then
+	STR_BASENAME="$(basename "$FILE")"
+	if [[ "$STR_BASENAME" = halftheory_* ]]; then
+		chmod $CHMOD_FILE "$FILE"
 		continue
 	fi
-	chmod +x "$FILE"
-	if [[ "$FILE" = *install* ]] || [[ "$FILE" = *update* ]]; then
+	chmod $CHMOD_X "$FILE"
+	if [[ "$STR_BASENAME" = install* ]] || [[ "$STR_BASENAME" = update* ]]; then
 		continue
 	fi
-	echo "> $(basename "$FILE")"
-	CMD_TEST="$FILE $STR_ARG"
-	eval "$CMD_TEST"
+	echo "> $STR_BASENAME"
+	eval "$(quote_string_with_spaces "$FILE") $STR_ARG"
 done
+
+if [ -f "$FILE_ENV" ]; then
+	chmod $CHMOD_FILE "$FILE_ENV"
+fi
 
 exit 0

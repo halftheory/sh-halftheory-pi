@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# import vars
+# import environment
 CMD_TEST="$(readlink "$0")"
 if [ ! "$CMD_TEST" = "" ]; then
 	DIRNAME="$(dirname "$CMD_TEST")"
 else
 	DIRNAME="$(dirname "$0")"
 fi
-if [ -f "$DIRNAME/halftheory_vars.sh" ]; then
-	. $DIRNAME/halftheory_vars.sh
+if [ -f "$DIRNAME/halftheory_env_pi.sh" ]; then
+	. $DIRNAME/halftheory_env_pi.sh
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1
@@ -56,8 +56,9 @@ FILE_TEST="$DIR_TEST/ssh"
 read -p "> Create file '$FILE_TEST'? [y]: " PROMPT_TEST
 PROMPT_TEST="${PROMPT_TEST:-y}"
 if [ "$PROMPT_TEST" = "y" ]; then
+	${MAYBE_SUDO}rm -f "$FILE_TEST" > /dev/null 2>&1
 	${MAYBE_SUDO}touch "$FILE_TEST"
-	${MAYBE_SUDO}chmod $CHMOD_FILES "$FILE_TEST"
+	${MAYBE_SUDO}chmod $CHMOD_FILE "$FILE_TEST"
 fi
 
 # userconf
@@ -70,8 +71,10 @@ if [ "$PROMPT_TEST" = "y" ]; then
 	if [ ! "$STR_USERCONF_USER" = "" ] && [ ! "$STR_USERCONF_PASS" = "" ]; then
 		${MAYBE_SUDO}rm -f "$FILE_TEST" > /dev/null 2>&1
 		${MAYBE_SUDO}touch "$FILE_TEST"
-		${MAYBE_SUDO}chmod $CHMOD_FILES "$FILE_TEST"
-		STR_USERCONF_PASS="$(echo $STR_USERCONF_PASS | openssl passwd -stdin)"
+		${MAYBE_SUDO}chmod $CHMOD_FILE "$FILE_TEST"
+		if is_which "openssl"; then
+			STR_USERCONF_PASS="$(echo $STR_USERCONF_PASS | openssl passwd -stdin)"
+		fi
 		file_add_line "$FILE_TEST" "$STR_USERCONF_USER:$STR_USERCONF_PASS" "sudo"
 	fi
 fi
@@ -86,7 +89,7 @@ if [ "$PROMPT_TEST" = "y" ]; then
 	if [ ! "$STR_WPA_SSID" = "" ]; then
 		${MAYBE_SUDO}rm -f "$FILE_TEST" > /dev/null 2>&1
 		${MAYBE_SUDO}touch "$FILE_TEST"
-		${MAYBE_SUDO}chmod $CHMOD_FILES "$FILE_TEST"
+		${MAYBE_SUDO}chmod $CHMOD_FILE "$FILE_TEST"
 		file_add_line "$FILE_TEST" "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev" "sudo"
 		file_add_line "$FILE_TEST" "update_config=1" "sudo"
 		file_add_line "$FILE_TEST" "country=US" "sudo"
@@ -100,6 +103,20 @@ if [ "$PROMPT_TEST" = "y" ]; then
 			file_add_line "$FILE_TEST" "psk=\"$STR_WPA_PASS\"" "sudo"
 		fi
 		file_add_line "$FILE_TEST" "}" "sudo"
+	fi
+fi
+
+# config.txt, cmdline.txt
+read -p "> Enable SSH login over USB? [y]: " PROMPT_TEST
+PROMPT_TEST="${PROMPT_TEST:-y}"
+if [ "$PROMPT_TEST" = "y" ]; then
+	FILE_TEST="$DIR_TEST/config.txt"
+	if file_add_line_config_after_all "dtoverlay=dwc2" "$FILE_TEST"; then
+		echo "> Updated '$(basename "$FILE_TEST")'."
+	fi
+	FILE_TEST="$DIR_TEST/cmdline.txt"
+	if file_add_string_cmdline "modules-load=dwc2,g_ether" "$FILE_TEST"; then
+		echo "> Updated '$(basename "$FILE_TEST")'."
 	fi
 fi
 
