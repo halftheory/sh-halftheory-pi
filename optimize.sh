@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# import vars
+# import environment
 CMD_TEST="$(readlink "$0")"
 if [ ! "$CMD_TEST" = "" ]; then
 	DIRNAME="$(dirname "$CMD_TEST")"
 else
 	DIRNAME="$(dirname "$0")"
 fi
-if [ -f "$DIRNAME/halftheory_vars.sh" ]; then
-	. $DIRNAME/halftheory_vars.sh
+if [ -f "$DIRNAME/halftheory_env_pi.sh" ]; then
+	. $DIRNAME/halftheory_env_pi.sh
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1
@@ -73,20 +73,15 @@ fi
 
 if prompt "Enable SSH login over USB"; then
 	if file_add_line_config_after_all "dtoverlay=dwc2"; then
-		echo "> Updated '$(basename "$FILE_CONFIG")'."
+		echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
 	fi
-	FILE_TEST="/boot/cmdline.txt"
-	if [ -e "$FILE_TEST" ]; then
-		STR_TEST="modules-load=dwc2,g_ether"
-		if [ "$(grep -e "$STR_TEST" "$FILE_TEST")" = "" ]; then
-			${MAYBE_SUDO}sed -i -E "\$s/(\s*)$/ $STR_TEST\1/g" "$FILE_TEST"
-			echo "> Updated '$(basename "$FILE_TEST")'."
-		fi
+	if file_add_string_cmdline "modules-load=dwc2,g_ether"; then
+		echo "> Updated '$(basename "$PI_FILE_CMDLINE")'."
 	fi
 fi
 
-if prompt "Set locale to en_US.UTF-8"; then
-	STR_TEST="en_US.UTF-8"
+STR_TEST="en_US.UTF-8"
+if prompt "Set locale to $STR_TEST"; then
 	if [ ! "$(locale 2>&1 | grep -v $STR_TEST)" = "" ]; then
 		export LANG=$STR_TEST
 		export LANGUAGE=$STR_TEST
@@ -116,7 +111,7 @@ if prompt "Remove triggerhappy"; then
 fi
 
 if prompt "Reduce bash/tmux buffer"; then
-	FILE_TEST="$DIR_LOCAL/.bashrc"
+	FILE_TEST="$(get_shell_env_file)"
 	ARR_TEST=(
 		"HISTSIZE=500"
 		"HISTFILESIZE=1000"
@@ -124,14 +119,14 @@ if prompt "Reduce bash/tmux buffer"; then
 	if ! file_contains_line "$FILE_TEST" "${ARR_TEST[0]}"; then
 		if [ ! -f "$FILE_TEST" ]; then
 			touch "$FILE_TEST"
-			chmod $CHMOD_FILES "$FILE_TEST"
+			chmod $CHMOD_0 "$FILE_TEST"
 		else
 			if [ "$(get_system)" = "Darwin" ]; then
-				sed -i '' -E "s/HISTSIZE=[0-9]*/${ARR_TEST[0]}/g" $FILE_TEST
-				sed -i '' -E "s/HISTFILESIZE=[0-9]*/${ARR_TEST[1]}/g" $FILE_TEST
+				sed -i '' -E "s/HISTSIZE=[0-9]*/${ARR_TEST[0]}/g" "$FILE_TEST"
+				sed -i '' -E "s/HISTFILESIZE=[0-9]*/${ARR_TEST[1]}/g" "$FILE_TEST"
 			else
-				sed -i -E "s/HISTSIZE=[0-9]*/${ARR_TEST[0]}/g" $FILE_TEST
-				sed -i -E "s/HISTFILESIZE=[0-9]*/${ARR_TEST[1]}/g" $FILE_TEST
+				sed -i -E "s/HISTSIZE=[0-9]*/${ARR_TEST[0]}/g" "$FILE_TEST"
+				sed -i -E "s/HISTFILESIZE=[0-9]*/${ARR_TEST[1]}/g" "$FILE_TEST"
 			fi
 		fi
 		for STR_TEST in "${ARR_TEST[@]}"; do
@@ -140,7 +135,7 @@ if prompt "Reduce bash/tmux buffer"; then
 		echo "> Updated '$(basename "$FILE_TEST")'."
 	fi
 	if is_which "tmux"; then
-		FILE_TEST="$DIR_LOCAL/.tmux.conf"
+		FILE_TEST="$DIR_HOME/.tmux.conf"
 		ARR_TEST=(
 			"set-option -g history-limit 1000"
 			"set -g mouse off"
@@ -148,7 +143,7 @@ if prompt "Reduce bash/tmux buffer"; then
 		if ! file_contains_line "$FILE_TEST" "${ARR_TEST[0]}"; then
 			if [ ! -f "$FILE_TEST" ]; then
 				touch "$FILE_TEST"
-				chmod $CHMOD_FILES "$FILE_TEST"
+				chmod $CHMOD_FILE "$FILE_TEST"
 			fi
 			for STR_TEST in "${ARR_TEST[@]}"; do
 				file_add_line "$FILE_TEST" "$STR_TEST"
@@ -161,9 +156,9 @@ fi
 if prompt "Disable logging"; then
 	FILE_TEST="/etc/rsyslog.conf"
 	if [ -e "$FILE_TEST" ]; then
-		if ! file_contains_line "$FILE_TEST" "*.*\t\t~" && [ "$(grep -e "\*\.\*\t\t~" $FILE_TEST)" = "" ] && [ "$(grep -e "\*\.\*\s\s~" $FILE_TEST)" = "" ]; then
+		if ! file_contains_line "$FILE_TEST" "*.*\t\t~" && [ "$(grep -e "\*\.\*\t\t~" "$FILE_TEST")" = "" ] && [ "$(grep -e "\*\.\*\s\s~" "$FILE_TEST")" = "" ]; then
 			${MAYBE_SUDO}systemctl disable rsyslog
-			${MAYBE_SUDO}perl -0777 -pi -e "s/(#### RULES ####\n###############\n)/\1*.*\t\t~\n/sg" $FILE_TEST
+			${MAYBE_SUDO}perl -0777 -pi -e "s/(#### RULES ####\n###############\n)/\1*.*\t\t~\n/sg" "$FILE_TEST"
 			echo "> Updated '$(basename "$FILE_TEST")'."
 		fi
 	fi
@@ -172,7 +167,7 @@ fi
 if prompt "Disable man indexing"; then
 	FILE_TEST="/etc/cron.daily/man-db"
 	if [ -e "$FILE_TEST" ]; then
-		if [ "$(grep -Pzo "\#\!\/bin\/sh\nexit 0" $FILE_TEST | xargs --null)" = "" ]; then
+		if [ "$(grep -Pzo "\#\!\/bin\/sh\nexit 0" "$FILE_TEST" | xargs --null)" = "" ]; then
 			if file_replace_line_first "$FILE_TEST" "(#!/bin/sh)" "\1\nexit 0" "sudo"; then
 				echo "> Updated '$(basename "$FILE_TEST")'."
 			fi
@@ -180,7 +175,7 @@ if prompt "Disable man indexing"; then
 	fi
 	FILE_TEST="/etc/cron.weekly/man-db"
 	if [ -e "$FILE_TEST" ]; then
-		if [ "$(grep -Pzo "\#\!\/bin\/sh\nexit 0" $FILE_TEST | xargs --null)" = "" ]; then
+		if [ "$(grep -Pzo "\#\!\/bin\/sh\nexit 0" "$FILE_TEST" | xargs --null)" = "" ]; then
 			if file_replace_line_first "$FILE_TEST" "(#!/bin/sh)" "\1\nexit 0" "sudo"; then
 				echo "> Updated '$(basename "$FILE_TEST")'."
 			fi
@@ -209,11 +204,11 @@ fi
 if prompt "Use all 4 CPUs for compiling"; then
 	STR_TEST="MAKEFLAGS=-j4"
 	export $STR_TEST
-	FILE_TEST="$DIR_LOCAL/.profile"
+	FILE_TEST="$(get_shell_env_file)"
 	if ! file_contains_line "$FILE_TEST" "$STR_TEST"; then
 		if [ ! -f "$FILE_TEST" ]; then
 			touch "$FILE_TEST"
-			chmod $CHMOD_FILES "$FILE_TEST"
+			chmod $CHMOD_0 "$FILE_TEST"
 		fi
 		if file_add_line "$FILE_TEST" "$STR_TEST"; then
 			echo "> Updated '$(basename "$FILE_TEST")'."
@@ -226,18 +221,13 @@ fi
 
 if prompt "Turn off temperature warning"; then
 	if file_add_line_config_after_all "avoid_warnings=1"; then
-		echo "> Updated '$(basename "$FILE_CONFIG")'."
+		echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
 	fi
 fi
 
 if prompt "Turn off top raspberries"; then
-	FILE_TEST="/boot/cmdline.txt"
-	if [ -e "$FILE_TEST" ]; then
-		STR_TEST="logo.nologo"
-		if [ "$(grep -e "$STR_TEST" "$FILE_TEST")" = "" ]; then
-			${MAYBE_SUDO}sed -i -E "\$s/(\s*)$/ $STR_TEST\1/g" "$FILE_TEST"
-			echo "> Updated '$(basename "$FILE_TEST")'."
-		fi
+	if file_add_string_cmdline "logo.nologo"; then
+		echo "> Updated '$(basename "$PI_FILE_CMDLINE")'."
 	fi
 fi
 
@@ -246,14 +236,14 @@ if prompt "Improve Wi-Fi performance - Disable WLAN adaptor power management"; t
 	if [ ! "$STR_TEST" = "" ]; then
 		STR_TEST="${STR_TEST%:}"
 		if file_add_line_rclocal_before_exit "iwconfig $STR_TEST power off"; then
-			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
+			echo "> Updated '$(basename "$PI_FILE_RCLOCAL")'."
 		fi
 	fi
 fi
 
 if prompt "Turn off blinking cursor"; then
 	if file_add_line_rclocal_before_exit "echo 0 > /sys/class/graphics/fbcon/cursor_blink"; then
-		echo "> Updated '$(basename "$FILE_RCLOCAL")'."
+		echo "> Updated '$(basename "$PI_FILE_RCLOCAL")'."
 	fi
 fi
 
@@ -275,26 +265,24 @@ if prompt "Install usbmount"; then
 	if [ "$CMD_TEST" = "" ] && check_remote_host "archive.raspberrypi.org"; then
 		${MAYBE_SUDO}apt-get -y install git debhelper build-essential eject ntfs-3g exfat-fuse exfat-utils
 		sleep 1
-		DIR_TEST="$(get_user_dir "$(whoami)")"
-		if [ ! "$DIR_TEST" = "" ]; then
-			DIR_TEST="$(get_realpath "$DIR_TEST")/"
-			(cd "$DIR_TEST" && git clone https://github.com/nicokaiser/usbmount/)
+		if [ -d "$DIR_HOME" ]; then
+			(cd "$DIR_HOME" && git clone https://github.com/nicokaiser/usbmount/)
 		else
 			git clone https://github.com/nicokaiser/usbmount/
 		fi
-		if [ $? -eq 0 ] && [ -d "${DIR_TEST}usbmount" ]; then
-			(cd "${DIR_TEST}usbmount" && ${MAYBE_SUDO}dpkg-buildpackage -us -uc -b)
+		if [ $? -eq 0 ] && [ -d "${DIR_HOME}usbmount" ]; then
+			(cd "${DIR_HOME}usbmount" && ${MAYBE_SUDO}dpkg-buildpackage -us -uc -b)
 			sleep 1
-			if [ -f "${DIR_TEST}usbmount_0.0.24_all.deb" ]; then
-				${MAYBE_SUDO}dpkg -i ${DIR_TEST}usbmount_0.0.24_all.deb
+			if [ -f "${DIR_HOME}usbmount_0.0.24_all.deb" ]; then
+				${MAYBE_SUDO}dpkg -i ${DIR_HOME}usbmount_0.0.24_all.deb
 				${MAYBE_SUDO}apt-get -y install -f
 				sleep 1
 				BOOL_TEST=true
 			fi
-			if [ ! -f "/etc/usbmount/usbmount.conf" ] && [ -f "${DIR_TEST}usbmount/usbmount.conf" ]; then
-				${MAYBE_SUDO}cp -f "${DIR_TEST}usbmount/usbmount.conf" "/etc/usbmount/usbmount.conf" > /dev/null 2>&1
+			if [ ! -f "/etc/usbmount/usbmount.conf" ] && [ -f "${DIR_HOME}usbmount/usbmount.conf" ]; then
+				${MAYBE_SUDO}cp -f "${DIR_HOME}usbmount/usbmount.conf" "/etc/usbmount/usbmount.conf" > /dev/null 2>&1
 			fi
-			${MAYBE_SUDO}rm -Rf "${DIR_TEST}usbmount" > /dev/null 2>&1
+			${MAYBE_SUDO}rm -Rf "${DIR_HOME}usbmount" > /dev/null 2>&1
 		fi
 		# usbmount.conf
 		FILE_TEST="/etc/usbmount/usbmount.conf"

@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# import vars
+# import environment
 CMD_TEST="$(readlink "$0")"
 if [ ! "$CMD_TEST" = "" ]; then
 	DIRNAME="$(dirname "$CMD_TEST")"
 else
 	DIRNAME="$(dirname "$0")"
 fi
-if [ -f "$DIRNAME/halftheory_vars.sh" ]; then
-	. $DIRNAME/halftheory_vars.sh
+if [ -f "$DIRNAME/halftheory_env_pi.sh" ]; then
+	. $DIRNAME/halftheory_env_pi.sh
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1
@@ -17,16 +17,12 @@ fi
 SCRIPT_ALIAS="config"
 
 # usage
-if [ -z $1 ] || [ "$1" = "-help" ]; then
+if [ -z "$1" ] || [ "$1" = "-help" ]; then
 	echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|led|network|overclock|video] [on|off]"
 	exit 1
 # install
 elif [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
-		# depends
-		if has_arg "$*" "-depends" && [ ! "$(get_system)" = "Darwin" ]; then
-			maybe_apt_install "ufw"
-		fi
 		echo "> Installed."
 		exit 0
 	else
@@ -55,40 +51,40 @@ esac
 
 case "$1" in
 	audio)
-		FILESIZE="$(get_file_size "$FILE_CONFIG")"
+		FILESIZE="$(get_file_size "$PI_FILE_CONFIG")"
 		case "$2" in
 			on)
-				if ! file_contains_line "$FILE_CONFIG" "dtparam=audio=on"; then
-					if ! file_replace_line "$FILE_CONFIG" "dtparam=audio=off" "dtparam=audio=on" "sudo"; then
+				if ! file_contains_line "$PI_FILE_CONFIG" "dtparam=audio=on"; then
+					if ! file_replace_line "$PI_FILE_CONFIG" "dtparam=audio=off" "dtparam=audio=on" "sudo"; then
 						file_add_line_config_after_all "dtparam=audio=on"
 					fi
 				fi
 				file_add_line_config_after_all "audio_pwm_mode=2"
 				;;
 			off)
-				if ! file_contains_line "$FILE_CONFIG" "dtparam=audio=off"; then
-					if ! file_replace_line "$FILE_CONFIG" "dtparam=audio=on" "dtparam=audio=off" "sudo"; then
+				if ! file_contains_line "$PI_FILE_CONFIG" "dtparam=audio=off"; then
+					if ! file_replace_line "$PI_FILE_CONFIG" "dtparam=audio=on" "dtparam=audio=off" "sudo"; then
 						file_add_line_config_after_all "dtparam=audio=off"
 					fi
 				fi
-				file_comment_line "$FILE_CONFIG" "audio_pwm_mode=2" "sudo"
+				file_comment_line "$PI_FILE_CONFIG" "audio_pwm_mode=2" "sudo"
 				;;
 		esac
 		sleep 1
-		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
-			echo "> Updated '$(basename "$FILE_CONFIG")'."
+		if [ ! "$FILESIZE" = "$(get_file_size "$PI_FILE_CONFIG")" ]; then
+			echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
 		fi
 		echo "> $1 will be $2 after rebooting."
 		;;
 
 	bluetooth)
-		FILESIZE="$(get_file_size "$FILE_CONFIG")"
+		FILESIZE="$(get_file_size "$PI_FILE_CONFIG")"
 		case "$2" in
 			on)
 				echo "> Enabling services..."
 				${MAYBE_SUDO}systemctl enable bluetooth
 				${MAYBE_SUDO}systemctl enable hciuart
-				file_comment_line "$FILE_CONFIG" "dtoverlay=disable-bt" "sudo"
+				file_comment_line "$PI_FILE_CONFIG" "dtoverlay=disable-bt" "sudo"
 				;;
 			off)
 				echo "> Disabling services..."
@@ -98,8 +94,8 @@ case "$1" in
 				;;
 		esac
 		sleep 1
-		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
-			echo "> Updated '$(basename "$FILE_CONFIG")'."
+		if [ ! "$FILESIZE" = "$(get_file_size "$PI_FILE_CONFIG")" ]; then
+			echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
 		fi
 		echo "> $1 will be $2 after rebooting."
 		;;
@@ -112,7 +108,7 @@ case "$1" in
 		fi
 		case "$2" in
 			on)
-				if maybe_apt_install "ufw"; then
+				if maybe_install "ufw"; then
 					echo "> Enabling firewall..."
 					${MAYBE_SUDO}ufw allow ssh
 					${MAYBE_SUDO}ufw default allow incoming
@@ -137,30 +133,30 @@ case "$1" in
 		;;
 
 	hdmi)
-		FILESIZE_CONFIG="$(get_file_size "$FILE_CONFIG")"
-		FILESIZE_RCLOCAL="$(get_file_size "$FILE_RCLOCAL")"
+		FILESIZE_CONFIG="$(get_file_size "$PI_FILE_CONFIG")"
+		FILESIZE_RCLOCAL="$(get_file_size "$PI_FILE_RCLOCAL")"
 		case "$2" in
 			on)
 				# hdmi_force_hotplug=1
 				file_add_line_config_after_all "hdmi_force_hotplug=1"
 				# comment sdtv_mode, disable_overscan
-				file_replace_line "$FILE_CONFIG" "(sdtv_mode=[0-9]*)" "#\1" "sudo"
-				file_comment_line "$FILE_CONFIG" "disable_overscan=1" "sudo"
+				file_replace_line "$PI_FILE_CONFIG" "(sdtv_mode=[0-9]*)" "#\1" "sudo"
+				file_comment_line "$PI_FILE_CONFIG" "disable_overscan=1" "sudo"
 				# rc.local
 				if is_vcgencmd_working; then
-					file_comment_line "$FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
+					file_comment_line "$PI_FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
 					vcgencmd display_power 1
 				fi
 				;;
 			off)
 				# comment hdmi_force_hotplug=1
-				file_comment_line "$FILE_CONFIG" "hdmi_force_hotplug=1" "sudo"
+				file_comment_line "$PI_FILE_CONFIG" "hdmi_force_hotplug=1" "sudo"
 				# sdtv_mode=18
-				if ! file_contains_line "$FILE_CONFIG" "sdtv_mode=18"; then
+				if ! file_contains_line "$PI_FILE_CONFIG" "sdtv_mode=18"; then
 					if [ "$(get_system)" = "Darwin" ]; then
-						${MAYBE_SUDO}sed -i '' -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" "$FILE_CONFIG"
+						${MAYBE_SUDO}sed -i '' -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" "$PI_FILE_CONFIG"
 					else
-						${MAYBE_SUDO}sed -i -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" "$FILE_CONFIG"
+						${MAYBE_SUDO}sed -i -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" "$PI_FILE_CONFIG"
 					fi
 					file_add_line_config_after_all "sdtv_mode=18"
 				fi
@@ -173,24 +169,24 @@ case "$1" in
 		esac
 		# need for both hdmi and pal
 		if is_which "tvservice"; then
-			file_comment_line "$FILE_RCLOCAL" "tvservice -o" "sudo"
+			file_comment_line "$PI_FILE_RCLOCAL" "tvservice -o" "sudo"
 			if is_opengl_legacy; then
 				tvservice -p
 			fi
 		fi
 		sleep 1
-		if [ ! "$FILESIZE_CONFIG" = "$(get_file_size "$FILE_CONFIG")" ]; then
-			echo "> Updated '$(basename "$FILE_CONFIG")'."
+		if [ ! "$FILESIZE_CONFIG" = "$(get_file_size "$PI_FILE_CONFIG")" ]; then
+			echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
 		fi
-		if [ ! "$FILESIZE_RCLOCAL" = "$(get_file_size "$FILE_RCLOCAL")" ]; then
-			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
+		if [ ! "$FILESIZE_RCLOCAL" = "$(get_file_size "$PI_FILE_RCLOCAL")" ]; then
+			echo "> Updated '$(basename "$PI_FILE_RCLOCAL")'."
 		fi
 		echo "> $1 is now $2. This will persist after rebooting."
 		;;
 
 	led)
-		FILESIZE_CONFIG="$(get_file_size "$FILE_CONFIG")"
-		FILESIZE_RCLOCAL="$(get_file_size "$FILE_RCLOCAL")"
+		FILESIZE_CONFIG="$(get_file_size "$PI_FILE_CONFIG")"
+		FILESIZE_RCLOCAL="$(get_file_size "$PI_FILE_RCLOCAL")"
 		ARR_CONFIG=(
 			"dtparam=pwr_led_trigger=none"
 			"dtparam=pwr_led_activelow=off"
@@ -229,10 +225,10 @@ case "$1" in
 		case "$2" in
 			on)
 				for STR in "${ARR_CONFIG[@]}"; do
-					file_comment_line "$FILE_CONFIG" "$STR" "sudo"
+					file_comment_line "$PI_FILE_CONFIG" "$STR" "sudo"
 				done
 				for STR in "${ARR_RCLOCAL[@]}"; do
-					file_comment_line "$FILE_RCLOCAL" "$STR" "sudo"
+					file_comment_line "$PI_FILE_RCLOCAL" "$STR" "sudo"
 				done
 				;;
 			off)
@@ -245,17 +241,17 @@ case "$1" in
 				;;
 		esac
 		sleep 1
-		if [ ! "$FILESIZE_CONFIG" = "$(get_file_size "$FILE_CONFIG")" ]; then
-			echo "> Updated '$(basename "$FILE_CONFIG")'."
+		if [ ! "$FILESIZE_CONFIG" = "$(get_file_size "$PI_FILE_CONFIG")" ]; then
+			echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
 		fi
-		if [ ! "$FILESIZE_RCLOCAL" = "$(get_file_size "$FILE_RCLOCAL")" ]; then
-			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
+		if [ ! "$FILESIZE_RCLOCAL" = "$(get_file_size "$PI_FILE_RCLOCAL")" ]; then
+			echo "> Updated '$(basename "$PI_FILE_RCLOCAL")'."
 		fi
 		echo "> $1 will be $2 after rebooting."
 		;;
 
 	network)
-		FILESIZE="$(get_file_size "$FILE_CONFIG")"
+		FILESIZE="$(get_file_size "$PI_FILE_CONFIG")"
 		case "$2" in
 			on)
 				echo "> Enabling services..."
@@ -263,7 +259,7 @@ case "$1" in
 				${MAYBE_SUDO}systemctl enable ssh
 				${MAYBE_SUDO}systemctl enable smbd
 				${MAYBE_SUDO}systemctl enable nmbd
-				file_comment_line "$FILE_CONFIG" "dtoverlay=disable-wifi" "sudo"
+				file_comment_line "$PI_FILE_CONFIG" "dtoverlay=disable-wifi" "sudo"
 				;;
 			off)
 				echo "> Disabling services..."
@@ -275,14 +271,14 @@ case "$1" in
 				;;
 		esac
 		sleep 1
-		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
-			echo "> Updated '$(basename "$FILE_CONFIG")'."
+		if [ ! "$FILESIZE" = "$(get_file_size "$PI_FILE_CONFIG")" ]; then
+			echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
 		fi
 		echo "> $1 is now $2. This will persist after rebooting."
 		;;
 
 	overclock)
-		FILESIZE="$(get_file_size "$FILE_CONFIG")"
+		FILESIZE="$(get_file_size "$PI_FILE_CONFIG")"
 		ARR_TEST=(
 			"arm_boost=1"
 			"gpu_freq=600"
@@ -296,30 +292,30 @@ case "$1" in
 				;;
 			off)
 				for STR in "${ARR_TEST[@]}"; do
-					file_comment_line "$FILE_CONFIG" "$STR" "sudo"
+					file_comment_line "$PI_FILE_CONFIG" "$STR" "sudo"
 				done
 				;;
 		esac
 		sleep 1
-		if [ ! "$FILESIZE" = "$(get_file_size "$FILE_CONFIG")" ]; then
-			echo "> Updated '$(basename "$FILE_CONFIG")'."
+		if [ ! "$FILESIZE" = "$(get_file_size "$PI_FILE_CONFIG")" ]; then
+			echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
 		fi
 		echo "> $1 will be $2 after rebooting."
 		;;
 
 	video)
-		FILESIZE_RCLOCAL="$(get_file_size "$FILE_RCLOCAL")"
+		FILESIZE_RCLOCAL="$(get_file_size "$PI_FILE_RCLOCAL")"
 		case "$2" in
 			on)
 				if is_which "tvservice" && is_opengl_legacy; then
-					file_comment_line "$FILE_RCLOCAL" "tvservice -o" "sudo"
+					file_comment_line "$PI_FILE_RCLOCAL" "tvservice -o" "sudo"
 					tvservice -p
 				elif is_which "xset"; then
-					file_comment_line "$FILE_RCLOCAL" "xset dpms force off" "sudo"
+					file_comment_line "$PI_FILE_RCLOCAL" "xset dpms force off" "sudo"
 					xset dpms force on
 				fi
 				if is_vcgencmd_working; then
-					file_comment_line "$FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
+					file_comment_line "$PI_FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
 					vcgencmd display_power 1
 				fi
 				;;
@@ -338,8 +334,8 @@ case "$1" in
 				;;
 		esac
 		sleep 1
-		if [ ! "$FILESIZE_RCLOCAL" = "$(get_file_size "$FILE_RCLOCAL")" ]; then
-			echo "> Updated '$(basename "$FILE_RCLOCAL")'."
+		if [ ! "$FILESIZE_RCLOCAL" = "$(get_file_size "$PI_FILE_RCLOCAL")" ]; then
+			echo "> Updated '$(basename "$PI_FILE_RCLOCAL")'."
 		fi
 		echo "> $1 is now $2. This will persist after rebooting."
 		;;

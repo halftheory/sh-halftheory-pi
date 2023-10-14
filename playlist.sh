@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# import vars
+# import environment
 CMD_TEST="$(readlink "$0")"
 if [ ! "$CMD_TEST" = "" ]; then
 	DIRNAME="$(dirname "$CMD_TEST")"
 else
 	DIRNAME="$(dirname "$0")"
 fi
-if [ -f "$DIRNAME/halftheory_vars.sh" ]; then
-	. $DIRNAME/halftheory_vars.sh
+if [ -f "$DIRNAME/halftheory_env_pi.sh" ]; then
+	. $DIRNAME/halftheory_env_pi.sh
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1
@@ -32,18 +32,6 @@ if [ -z "$1" ] || [ "$1" = "-help" ]; then
 # install
 elif [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
-		# depends
-		if has_arg "$*" "-depends" && [ ! "$(get_system)" = "Darwin" ]; then
-			BOOL_FALLBACK=false
-			if ! maybe_apt_install "cvlc" "vlc"; then
-				BOOL_FALLBACK=true
-			elif ! maybe_apt_install "omxplayer"; then
-				BOOL_FALLBACK=true
-			fi
-			if [ $BOOL_FALLBACK = true ]; then
-				maybe_apt_install "ffplay" "ffmpeg"
-			fi
-		fi
 		echo "> Installed."
 		exit 0
 	else
@@ -53,14 +41,26 @@ elif [ "$1" = "-install" ]; then
 # uninstall
 elif [ "$1" = "-uninstall" ]; then
 	if script_uninstall "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
-		if has_arg "$*" "-depends"; then
-			rm -Rf "$DIR_WORKING" > /dev/null 2>&1
-		fi
+		rm -Rf "$DIR_WORKING" > /dev/null 2>&1
 		echo "> Uninstalled."
 		exit 0
 	else
 		echo "Error in $0 on line $LINENO. Exiting..."
 		exit 1
+	fi
+fi
+
+# depends
+if [ "$(get_system)" = "Linux" ]; then
+	echo "> Installing dependencies..."
+	BOOL_FALLBACK=false
+	if ! maybe_install "cvlc" "vlc"; then
+		BOOL_FALLBACK=true
+	elif ! maybe_install "omxplayer"; then
+		BOOL_FALLBACK=true
+	fi
+	if [ $BOOL_FALLBACK = true ]; then
+		maybe_install "ffplay" "ffmpeg"
 	fi
 fi
 
@@ -75,6 +75,7 @@ else
 	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1
 fi
+
 # check if already running
 if is_process_running "$STR_PROCESS"; then
 	echo "> Process '$STR_PROCESS' is already running. Exiting..."
@@ -108,10 +109,10 @@ case "$STR_PROCESS" in
 		if [ ! -f "$FILE_TEST" ]; then
 			if [ ! -d "$DIR_WORKING" ]; then
 				mkdir -p "$DIR_WORKING"
-				chmod $CHMOD_DIRS "$DIR_WORKING"
+				chmod $CHMOD_DIR "$DIR_WORKING"
 			fi
 			touch "$FILE_TEST"
-			chmod $CHMOD_FILES "$FILE_TEST"
+			chmod $CHMOD_FILE "$FILE_TEST"
 		fi
 		echo "ffconcat version 1.0" > "$FILE_TEST"
 		# add the list

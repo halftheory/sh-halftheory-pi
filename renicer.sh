@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# import vars
+# import environment
 CMD_TEST="$(readlink "$0")"
 if [ ! "$CMD_TEST" = "" ]; then
 	DIRNAME="$(dirname "$CMD_TEST")"
 else
 	DIRNAME="$(dirname "$0")"
 fi
-if [ -f "$DIRNAME/halftheory_vars.sh" ]; then
-	. $DIRNAME/halftheory_vars.sh
+if [ -f "$DIRNAME/halftheory_env_pi.sh" ]; then
+	. $DIRNAME/halftheory_env_pi.sh
 else
 	echo "Error in $0 on line $LINENO. Exiting..."
 	exit 1
@@ -17,9 +17,9 @@ fi
 SCRIPT_ALIAS="renicer"
 
 # usage
-if [ -z $1 ] || [ "$1" = "-help" ]; then
-    echo "> Usage: $SCRIPT_ALIAS [process] [persistent]"
-    echo ""
+if [ -z "$1" ] || [ "$1" = "-help" ]; then
+	echo "> Usage: $SCRIPT_ALIAS [process] [persistent]"
+	echo ""
 	echo "> Optional:"
 	echo "${MAYBE_SUDO}crontab -e"
 	if is_which "tmux"; then
@@ -27,7 +27,7 @@ if [ -z $1 ] || [ "$1" = "-help" ]; then
 	else
 		echo "@reboot $DIR_SCRIPTS/$SCRIPT_ALIAS [process] [persistent] > /dev/null 2>&1"
 	fi
-    exit 1
+	exit 1
 # install
 elif [ "$1" = "-install" ]; then
 	if script_install "$0" "$DIR_SCRIPTS/$SCRIPT_ALIAS" "sudo"; then
