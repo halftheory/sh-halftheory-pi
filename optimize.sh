@@ -305,7 +305,7 @@ if prompt "Install samba"; then
 	CMD_TEST="${MAYBE_SUDO}apt list --installed 2>&1 | grep \"samba/\""
 	CMD_TEST="$(eval "$CMD_TEST")"
 	if [ "$CMD_TEST" = "" ] && check_remote_host "archive.raspberrypi.org"; then
-		${MAYBE_SUDO}apt-get -y install samba samba-common-bin
+		${MAYBE_SUDO}apt-get -y install avahi-daemon samba samba-common-bin
 		sleep 1
 		if is_which "smbpasswd"; then
 			echo -ne "pi\npi\n" | ${MAYBE_SUDO}smbpasswd -s -a $OWN_LOCAL
