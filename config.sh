@@ -140,7 +140,6 @@ case "$1" in
 					${MAYBE_SUDO}ufw deny smtp
 					${MAYBE_SUDO}ufw allow ssh
 					ARR_TEST=(
-						"avahi-daemon"
 						"samba"
 						"wsdd"
 					)
