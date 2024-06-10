@@ -18,7 +18,7 @@ SCRIPT_ALIAS="config"
 
 # usage
 if [ -z "$1" ] || [ "$1" = "-help" ]; then
-	echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|led|network|overclock|video] [on|off]"
+	echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|led|network|overclock|video|wifi] [on|off]"
 	exit 1
 # install
 elif [ "$1" = "-install" ]; then
@@ -44,7 +44,7 @@ case "$2" in
 	on | off)
 		;;
 	*)
-		echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|led|network|overclock|video] [on|off]"
+		echo "> Usage: $SCRIPT_ALIAS [audio|bluetooth|firewall|hdmi|led|network|overclock|video|wifi] [on|off]"
 		exit 1
 		;;
 esac
@@ -52,6 +52,11 @@ esac
 case "$1" in
 	audio)
 		FILESIZE="$(get_file_size "$PI_FILE_CONFIG")"
+		ARR_TEST=(
+			"alsa-restore"
+			"alsa-state"
+			"alsa-utils"
+		)
 		case "$2" in
 			on)
 				if ! file_contains_line "$PI_FILE_CONFIG" "dtparam=audio=on"; then
@@ -60,6 +65,10 @@ case "$1" in
 					fi
 				fi
 				file_add_line_config_after_all "audio_pwm_mode=2"
+				for STR in "${ARR_TEST[@]}"; do
+					${MAYBE_SUDO}systemctl enable ${STR}.service
+					${MAYBE_SUDO}systemctl start ${STR}.service
+				done
 				;;
 			off)
 				if ! file_contains_line "$PI_FILE_CONFIG" "dtparam=audio=off"; then
@@ -68,6 +77,10 @@ case "$1" in
 					fi
 				fi
 				file_comment_line "$PI_FILE_CONFIG" "audio_pwm_mode=2" "sudo"
+				for STR in "${ARR_TEST[@]}"; do
+					${MAYBE_SUDO}systemctl stop ${STR}.service
+					${MAYBE_SUDO}systemctl disable ${STR}.service
+				done
 				;;
 		esac
 		sleep 1
@@ -79,18 +92,26 @@ case "$1" in
 
 	bluetooth)
 		FILESIZE="$(get_file_size "$PI_FILE_CONFIG")"
+		ARR_TEST=(
+			"bluetooth"
+			"hciuart"
+		)
 		case "$2" in
 			on)
 				echo "> Enabling services..."
-				${MAYBE_SUDO}systemctl enable bluetooth
-				${MAYBE_SUDO}systemctl enable hciuart
 				file_comment_line "$PI_FILE_CONFIG" "dtoverlay=disable-bt" "sudo"
+				for STR in "${ARR_TEST[@]}"; do
+					${MAYBE_SUDO}systemctl enable ${STR}.service
+					${MAYBE_SUDO}systemctl start ${STR}.service
+				done
 				;;
 			off)
 				echo "> Disabling services..."
-				${MAYBE_SUDO}systemctl disable bluetooth
-				${MAYBE_SUDO}systemctl disable hciuart
 				file_add_line_config_after_all "dtoverlay=disable-bt"
+				for STR in "${ARR_TEST[@]}"; do
+					${MAYBE_SUDO}systemctl stop ${STR}.service
+					${MAYBE_SUDO}systemctl disable ${STR}.service
+				done
 				;;
 		esac
 		sleep 1
@@ -101,16 +122,14 @@ case "$1" in
 		;;
 
 	firewall)
-		if is_which "ufw"; then
-			echo "> Reseting firewall..."
-			${MAYBE_SUDO}ufw logging off
-			${MAYBE_SUDO}ufw --force reset
-		fi
 		case "$2" in
 			on)
 				if maybe_install "ufw"; then
 					echo "> Enabling firewall..."
-					${MAYBE_SUDO}ufw allow ssh
+					${MAYBE_SUDO}systemctl enable ufw.service
+					${MAYBE_SUDO}systemctl start ufw.service
+					${MAYBE_SUDO}ufw --force reset
+					${MAYBE_SUDO}ufw logging off
 					${MAYBE_SUDO}ufw default allow incoming
 					${MAYBE_SUDO}ufw default allow outgoing
 					${MAYBE_SUDO}ufw deny ftp
@@ -119,6 +138,17 @@ case "$1" in
 					${MAYBE_SUDO}ufw deny imap
 					${MAYBE_SUDO}ufw deny pop3
 					${MAYBE_SUDO}ufw deny smtp
+					${MAYBE_SUDO}ufw allow ssh
+					ARR_TEST=(
+						"avahi-daemon"
+						"samba"
+						"wsdd"
+					)
+					for STR in "${ARR_TEST[@]}"; do
+						if is_which "$STR"; then
+							${MAYBE_SUDO}ufw allow $STR
+						fi
+					done
 					${MAYBE_SUDO}ufw --force enable
 				fi
 				;;
@@ -126,6 +156,8 @@ case "$1" in
 				if is_which "ufw"; then
 					echo "> Disabling firewall..."
 					${MAYBE_SUDO}ufw --force disable
+					${MAYBE_SUDO}systemctl stop ufw.service
+					${MAYBE_SUDO}systemctl disable ufw.service
 				fi
 				;;
 		esac
@@ -139,10 +171,14 @@ case "$1" in
 			on)
 				# hdmi_force_hotplug=1
 				file_add_line_config_after_all "hdmi_force_hotplug=1"
-				# comment sdtv_mode, disable_overscan
+				# comment sdtv_mode
 				file_replace_line "$PI_FILE_CONFIG" "(sdtv_mode=[0-9]*)" "#\1" "sudo"
+				# disable_overscan
 				file_comment_line "$PI_FILE_CONFIG" "disable_overscan=1" "sudo"
 				# rc.local
+				if is_which "tvservice"; then
+					file_comment_line "$PI_FILE_RCLOCAL" "tvservice -o" "sudo"
+				fi
 				if is_vcgencmd_working; then
 					file_comment_line "$PI_FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
 					vcgencmd display_power 1
@@ -151,29 +187,16 @@ case "$1" in
 			off)
 				# comment hdmi_force_hotplug=1
 				file_comment_line "$PI_FILE_CONFIG" "hdmi_force_hotplug=1" "sudo"
-				# sdtv_mode=18
-				if ! file_contains_line "$PI_FILE_CONFIG" "sdtv_mode=18"; then
-					if [ "$(get_system)" = "Darwin" ]; then
-						${MAYBE_SUDO}sed -i '' -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" "$PI_FILE_CONFIG"
-					else
-						${MAYBE_SUDO}sed -i -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" "$PI_FILE_CONFIG"
-					fi
-					file_add_line_config_after_all "sdtv_mode=18"
-				fi
 				# rc.local
+				if is_which "tvservice"; then
+					file_add_line_rclocal_before_exit "tvservice -o"
+				fi
 				if is_vcgencmd_working; then
 					file_add_line_rclocal_before_exit "vcgencmd display_power 0"
 					vcgencmd display_power 0
 				fi
 				;;
 		esac
-		# need for both hdmi and pal
-		if is_which "tvservice"; then
-			file_comment_line "$PI_FILE_RCLOCAL" "tvservice -o" "sudo"
-			if is_opengl_legacy; then
-				tvservice -p
-			fi
-		fi
 		sleep 1
 		if [ ! "$FILESIZE_CONFIG" = "$(get_file_size "$PI_FILE_CONFIG")" ]; then
 			echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
@@ -251,29 +274,42 @@ case "$1" in
 		;;
 
 	network)
-		FILESIZE="$(get_file_size "$PI_FILE_CONFIG")"
+		ARR_TEST=(
+			"networking"
+			"ssh"
+		)
+		if [ -e "/etc/NetworkManager" ]; then
+			ARR_TEST+=("NetworkManager")
+		fi
+		ARR_APPS=(
+			"avahi-daemon"
+			"nmbd"
+			"samba"
+			"smbd"
+			"wsdd"
+		)
+		for STR in "${ARR_APPS[@]}"; do
+			if is_which "$STR"; then
+				ARR_TEST+=("$STR")
+			fi
+		done
 		case "$2" in
 			on)
 				echo "> Enabling services..."
-				${MAYBE_SUDO}systemctl enable networking
-				${MAYBE_SUDO}systemctl enable ssh
-				${MAYBE_SUDO}systemctl enable smbd
-				${MAYBE_SUDO}systemctl enable nmbd
-				file_comment_line "$PI_FILE_CONFIG" "dtoverlay=disable-wifi" "sudo"
+				for STR in "${ARR_TEST[@]}"; do
+					${MAYBE_SUDO}systemctl enable ${STR}.service
+					${MAYBE_SUDO}systemctl start ${STR}.service
+				done
 				;;
 			off)
 				echo "> Disabling services..."
-				${MAYBE_SUDO}systemctl disable nmbd
-				${MAYBE_SUDO}systemctl disable smbd
-				${MAYBE_SUDO}systemctl disable ssh
-				${MAYBE_SUDO}systemctl disable networking
-				file_add_line_config_after_all "dtoverlay=disable-wifi"
+				for STR in "${ARR_TEST[@]}"; do
+					${MAYBE_SUDO}systemctl stop ${STR}.service
+					${MAYBE_SUDO}systemctl disable ${STR}.service
+				done
 				;;
 		esac
 		sleep 1
-		if [ ! "$FILESIZE" = "$(get_file_size "$PI_FILE_CONFIG")" ]; then
-			echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
-		fi
 		echo "> $1 is now $2. This will persist after rebooting."
 		;;
 
@@ -304,12 +340,25 @@ case "$1" in
 		;;
 
 	video)
+		FILESIZE_CONFIG="$(get_file_size "$PI_FILE_CONFIG")"
 		FILESIZE_RCLOCAL="$(get_file_size "$PI_FILE_RCLOCAL")"
 		case "$2" in
 			on)
-				if is_which "tvservice" && is_opengl_legacy; then
+				# sdtv_mode=18
+				if ! file_contains_line "$PI_FILE_CONFIG" "sdtv_mode=18"; then
+					if [ "$(get_system)" = "Darwin" ]; then
+						${MAYBE_SUDO}sed -i '' -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" "$PI_FILE_CONFIG"
+					else
+						${MAYBE_SUDO}sed -i -E "s/sdtv_mode=[0-9]*/sdtv_mode=18/g" "$PI_FILE_CONFIG"
+					fi
+					file_add_line_config_after_all "sdtv_mode=18"
+				fi
+				# rc.local
+				if is_which "tvservice"; then
 					file_comment_line "$PI_FILE_RCLOCAL" "tvservice -o" "sudo"
-					tvservice -p
+					if is_opengl_legacy; then
+						tvservice -p
+					fi
 				elif is_which "xset"; then
 					file_comment_line "$PI_FILE_RCLOCAL" "xset dpms force off" "sudo"
 					xset dpms force on
@@ -320,9 +369,14 @@ case "$1" in
 				fi
 				;;
 			off)
-				if is_which "tvservice" && is_opengl_legacy; then
+				# comment sdtv_mode
+				file_replace_line "$PI_FILE_CONFIG" "(sdtv_mode=[0-9]*)" "#\1" "sudo"
+				# rc.local
+				if is_which "tvservice"; then
 					file_add_line_rclocal_before_exit "tvservice -o"
-					tvservice -o
+					if is_opengl_legacy; then
+						tvservice -o
+					fi
 				elif is_which "xset"; then
 					file_add_line_rclocal_before_exit "xset dpms force off"
 					xset dpms force off
@@ -334,10 +388,28 @@ case "$1" in
 				;;
 		esac
 		sleep 1
+		if [ ! "$FILESIZE_CONFIG" = "$(get_file_size "$PI_FILE_CONFIG")" ]; then
+			echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
+		fi
 		if [ ! "$FILESIZE_RCLOCAL" = "$(get_file_size "$PI_FILE_RCLOCAL")" ]; then
 			echo "> Updated '$(basename "$PI_FILE_RCLOCAL")'."
 		fi
 		echo "> $1 is now $2. This will persist after rebooting."
+		;;
+
+	wifi)
+		case "$2" in
+			on)
+				file_comment_line "$PI_FILE_CONFIG" "dtoverlay=disable-wifi" "sudo"
+				;;
+			off)
+				STR_TEST="$(ifconfig | grep wlan)"
+				if [ ! "$STR_TEST" = "" ]; then
+					file_add_line_config_after_all "dtoverlay=disable-wifi"
+				fi
+				;;
+		esac
+		echo "> $1 will be $2 after rebooting."
 		;;
 
 	*)

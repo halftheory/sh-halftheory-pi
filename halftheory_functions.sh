@@ -75,8 +75,14 @@ function delete_macos_system_files()
 	if [ $2 ] && [ "$2" = "sudo" ]; then
 		STR_SUDO="$(maybe_sudo)"
 	fi
-	${STR_SUDO}find "$STR_TEST" -type f -name "._*" -o -name ".DS_Store*" | while read STR_FILE; do ${STR_SUDO}rm -f "$STR_FILE"; done > /dev/null 2>&1
-	${STR_SUDO}find "$STR_TEST" -type d -name ".fseventsd" -o -name ".Spotlight-V100" -o -name ".Trashes" | while read STR_FILE; do ${STR_SUDO}rm -Rf "$STR_FILE"; done > /dev/null 2>&1
+	${STR_SUDO}find "$STR_TEST" -type f -name "._*" -o -name ".DS_Store*" -delete > /dev/null 2>&1
+	${STR_SUDO}find "$STR_TEST" -type d -name ".fseventsd" -o -name ".Spotlight-V100" -o -name ".Trashes" -o -name "System Volume Information" | while read STR_FILE; do ${STR_SUDO}rm -rf "$STR_FILE"; done > /dev/null 2>&1
+	${STR_SUDO}rm -rf "$STR_TEST/.Spotlight-V100" "$STR_TEST/.Trashes" "$STR_TEST/System Volume Information" > /dev/null 2>&1
+	if [ -d "$STR_TEST/.fseventsd" ]; then
+		${STR_SUDO}rm -rf "$STR_TEST/.fseventsd" > /dev/null 2>&1
+		${STR_SUDO}mkdir -p "$STR_TEST/.fseventsd"
+		${STR_SUDO}touch "$STR_TEST/.fseventsd/no_log"
+	fi
 	return 0
 }
 
@@ -127,6 +133,18 @@ function dir_not_empty()
 	if [ "$(ls -A "$STR_TEST")" = "" ]; then
 		return 1
 	fi
+	return 0
+}
+
+function escape_brackets()
+{
+	# STRING
+	local STR_TEST="$*"
+	if [[ "$STR_TEST" = *\(* ]]; then
+		STR_TEST="${STR_TEST//\(/\\(}"
+		STR_TEST="${STR_TEST//\)/\\)}"
+	fi
+	echo "$STR_TEST"
 	return 0
 }
 

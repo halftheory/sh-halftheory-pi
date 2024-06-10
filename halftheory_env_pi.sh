@@ -16,10 +16,10 @@ fi
 
 # persistent vars
 if [ ! -n "$PI_FILE_CMDLINE" ]; then
-	PI_FILE_CMDLINE="$(file_add_line_env_prompt "PI_FILE_CMDLINE" "/boot/cmdline.txt" "file")"
+	PI_FILE_CMDLINE="$(file_add_line_env_prompt "PI_FILE_CMDLINE" "/boot/firmware/cmdline.txt,/boot/cmdline.txt" "file")"
 fi
 if [ ! -n "$PI_FILE_CONFIG" ]; then
-	PI_FILE_CONFIG="$(file_add_line_env_prompt "PI_FILE_CONFIG" "/boot/config.txt" "file")"
+	PI_FILE_CONFIG="$(file_add_line_env_prompt "PI_FILE_CONFIG" "/boot/firmware/config.txt,/boot/config.txt" "file")"
 fi
 if [ ! -n "$PI_FILE_RCLOCAL" ]; then
 	PI_FILE_RCLOCAL="$(file_add_line_env_prompt "PI_FILE_RCLOCAL" "/etc/rc.local" "file")"
@@ -149,7 +149,8 @@ function is_opengl_legacy()
 function is_vcgencmd_working()
 {
 	local STR_TEST="$(get_os_version_id)"
-	if is_which "vcgencmd" && is_int "$STR_TEST" && (($STR_TEST < 11)); then
+	#if is_which "vcgencmd" && is_int "$STR_TEST" && (($STR_TEST < 11)); then
+	if is_which "vcgencmd"; then
 		return 0
 	fi
 	return 1
