@@ -315,10 +315,10 @@ if prompt "Install samba"; then
 		FILE_TEST="/etc/samba/smb.conf"
 		if [ -e "$FILE_TEST" ]; then
 			# existing values
-			file_replace_line_first "$FILE_TEST" "browseable = no" "browseable = yes" "sudo"
-			file_replace_line_first "$FILE_TEST" "read only = yes" "read only = no" "sudo"
-			file_replace_line_first "$FILE_TEST" "create mask = [0-9]*" "create mask = 0775" "sudo"
-			file_replace_line_first "$FILE_TEST" "directory mask = [0-9]*" "directory mask = 0775" "sudo"
+			file_replace_line_first "$FILE_TEST" "   browseable = no" "browseable = yes" "sudo"
+			file_replace_line_first "$FILE_TEST" "   read only = yes" "read only = no" "sudo"
+			file_replace_line_first "$FILE_TEST" "   create mask = [0-9]*" "create mask = 0775" "sudo"
+			file_replace_line_first "$FILE_TEST" "   directory mask = [0-9]*" "directory mask = 0775" "sudo"
 			# new values
 			ARR_TEST=(
 				"available = yes"
@@ -333,7 +333,7 @@ if prompt "Install samba"; then
 		${MAYBE_SUDO}systemctl restart nmbd samba smbd
 	fi
 	if [ $BOOL_TEST = true ]; then
-		echo "> Installed. You must reboot."
+		echo "> Installed."
 	else
 		echo "> Not installed."
 	fi
