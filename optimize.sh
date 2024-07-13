@@ -101,28 +101,32 @@ if prompt "Perform apt-get upgrades"; then
 fi
 
 if prompt "Disable/remove unneeded built-in services"; then
+	ARR_TEST=(
+		"apt-daily"
+		"apt-daily-upgrade"
+		"rpi-display-backlight"
+	)
+	if [ -e "/etc/ModemManager" ]; then
+		ARR_TEST+=("ModemManager")
+	fi
+	if [ -e "/etc/NetworkManager" ]; then
+		ARR_TEST+=("NetworkManager-wait-online")
+	fi
 	if [ -e "/etc/init.d/triggerhappy" ] || [ -e "/etc/default/triggerhappy" ]; then
-		${MAYBE_SUDO}systemctl stop triggerhappy
-		${MAYBE_SUDO}systemctl disable triggerhappy
+		ARR_TEST+=("triggerhappy")
 		${MAYBE_SUDO}apt-get -y remove triggerhappy
 		${MAYBE_SUDO}apt-get -y autoremove
 		${MAYBE_SUDO}rm -f /etc/init.d/triggerhappy > /dev/null 2>&1
 		${MAYBE_SUDO}rm -f /etc/default/triggerhappy > /dev/null 2>&1
 		echo "> Removed 'triggerhappy'."
 	fi
-	if [ -e "/etc/NetworkManager" ]; then
-		${MAYBE_SUDO}systemctl stop NetworkManager-wait-online.service
-		${MAYBE_SUDO}systemctl disable NetworkManager-wait-online.service
-		echo "> Disabled 'NetworkManager-wait-online'."
-	fi
-	if [ -e "/etc/ModemManager" ]; then
-		${MAYBE_SUDO}systemctl stop ModemManager.service
-		${MAYBE_SUDO}systemctl disable ModemManager.service
-		echo "> Disabled 'ModemManager'."
-	fi
-	${MAYBE_SUDO}systemctl stop rpi-display-backlight.service
-	${MAYBE_SUDO}systemctl disable rpi-display-backlight.service
-	echo "> Disabled 'rpi-display-backlight'."
+	for STR in "${ARR_TEST[@]}"; do
+		${MAYBE_SUDO}systemctl stop ${STR}.service
+		${MAYBE_SUDO}systemctl disable ${STR}.service
+		echo "> Disabled '$STR'."
+	done
+	${MAYBE_SUDO}systemctl disable apt-daily.timer
+	${MAYBE_SUDO}systemctl disable apt-daily-upgrade.timer
 fi
 
 if prompt "Reduce bash/tmux buffer"; then
@@ -195,10 +199,25 @@ if prompt "Disable logging"; then
 				"level=OFF"
 			)
 			for STR in "${ARR_TEST[@]}"; do
-				file_add_line "$FILE_TEST" "$STR"
+				file_add_line "$FILE_TEST" "$STR" "sudo"
 			done
 			echo "> Updated '$(basename "$FILE_TEST")'."
 		fi
+	fi
+	FILE_TEST="/etc/logrotate.conf"
+	if [ -e "$FILE_TEST" ]; then
+		file_replace_line_first "$FILE_TEST" "rotate [0-9]*" "rotate 0" "sudo"
+		file_replace_line_first "$FILE_TEST" "create" "copytruncate" "sudo"
+		file_comment_line "$FILE_TEST" "include /etc/logrotate.d" "sudo"
+		ARR_TEST=(
+			"ignoreduplicates"
+			"missingok"
+			"notifempty"
+		)
+		for STR in "${ARR_TEST[@]}"; do
+			file_add_line "$FILE_TEST" "$STR" "sudo"
+		done
+		echo "> Updated '$(basename "$FILE_TEST")'."
 	fi
 fi
 
@@ -239,21 +258,26 @@ if prompt "tmpfs - Write to RAM instead of the local disk"; then
 	fi
 fi
 
-if prompt "Use all 4 CPUs for compiling"; then
-	STR_TEST="MAKEFLAGS=-j4"
-	export $STR_TEST
-	FILE_TEST="$(get_shell_env_file)"
-	if ! file_contains_line "$FILE_TEST" "$STR_TEST"; then
-		if [ ! -f "$FILE_TEST" ]; then
-			touch "$FILE_TEST"
-			chmod $CHMOD_0 "$FILE_TEST"
+if prompt "Use all CPUs for compiling"; then
+	if is_which "nproc"; then
+		INT_TEST="$(nproc)"
+		if [ ! "$INT_TEST" = "" ]; then
+			STR_TEST="MAKEFLAGS=-j${INT_TEST}"
+			export $STR_TEST
+			FILE_TEST="$(get_shell_env_file)"
+			if ! file_contains_line "$FILE_TEST" "$STR_TEST"; then
+				if [ ! -f "$FILE_TEST" ]; then
+					touch "$FILE_TEST"
+					chmod $CHMOD_0 "$FILE_TEST"
+				fi
+				if file_add_line "$FILE_TEST" "$STR_TEST"; then
+					echo "> Updated '$(basename "$FILE_TEST")'."
+				fi
+			fi
+			if file_add_line "/etc/environment" "$STR_TEST" "sudo"; then
+				echo "> Updated '/etc/environment'."
+			fi
 		fi
-		if file_add_line "$FILE_TEST" "$STR_TEST"; then
-			echo "> Updated '$(basename "$FILE_TEST")'."
-		fi
-	fi
-	if file_add_line "/etc/environment" "$STR_TEST" "sudo"; then
-		echo "> Updated '/etc/environment'."
 	fi
 fi
 
