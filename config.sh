@@ -176,11 +176,14 @@ case "$1" in
 				file_comment_line "$PI_FILE_CONFIG" "disable_overscan=1" "sudo"
 				# rc.local
 				if is_which "tvservice"; then
-					file_comment_line "$PI_FILE_RCLOCAL" "tvservice -o" "sudo"
+					file_comment_line "$PI_FILE_RCLOCAL" "$(is_which_file "tvservice") -o" "sudo"
 				fi
 				if is_vcgencmd_working; then
-					file_comment_line "$PI_FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
+					file_comment_line "$PI_FILE_RCLOCAL" "$(is_which_file "vcgencmd") display_power 0" "sudo"
 					vcgencmd display_power 1
+				fi
+				if is_which "kmsblank"; then
+					file_comment_line "$PI_FILE_RCLOCAL" "$(is_which_file "kmsblank")" "sudo"
 				fi
 				;;
 			off)
@@ -188,11 +191,17 @@ case "$1" in
 				file_comment_line "$PI_FILE_CONFIG" "hdmi_force_hotplug=1" "sudo"
 				# rc.local
 				if is_which "tvservice"; then
-					file_add_line_rclocal_before_exit "tvservice -o"
+					file_add_line_rclocal_before_exit "$(is_which_file "tvservice") -o"
 				fi
 				if is_vcgencmd_working; then
-					file_add_line_rclocal_before_exit "vcgencmd display_power 0"
+					file_add_line_rclocal_before_exit "$(is_which_file "vcgencmd") display_power 0"
 					vcgencmd display_power 0
+				fi
+				if is_which "kmsblank"; then
+					STR="$(kmsprint | grep "Connector" | grep -v "disconnected" | awk '{print $2}')"
+					if [ ! "$STR" = "" ]; then
+						file_add_line_rclocal_before_exit "$(is_which_file "kmsblank")"
+					fi
 				fi
 				;;
 		esac
@@ -354,16 +363,16 @@ case "$1" in
 				fi
 				# rc.local
 				if is_which "tvservice"; then
-					file_comment_line "$PI_FILE_RCLOCAL" "tvservice -o" "sudo"
+					file_comment_line "$PI_FILE_RCLOCAL" "$(is_which_file "tvservice") -o" "sudo"
 					if is_opengl_legacy; then
 						tvservice -p
 					fi
 				elif is_which "xset"; then
-					file_comment_line "$PI_FILE_RCLOCAL" "xset dpms force off" "sudo"
+					file_comment_line "$PI_FILE_RCLOCAL" "$(is_which_file "xset") dpms force off" "sudo"
 					xset dpms force on
 				fi
 				if is_vcgencmd_working; then
-					file_comment_line "$PI_FILE_RCLOCAL" "vcgencmd display_power 0" "sudo"
+					file_comment_line "$PI_FILE_RCLOCAL" "$(is_which_file "vcgencmd") display_power 0" "sudo"
 					vcgencmd display_power 1
 				fi
 				;;
@@ -372,16 +381,16 @@ case "$1" in
 				file_replace_line "$PI_FILE_CONFIG" "(sdtv_mode=[0-9]*)" "#\1" "sudo"
 				# rc.local
 				if is_which "tvservice"; then
-					file_add_line_rclocal_before_exit "tvservice -o"
+					file_add_line_rclocal_before_exit "$(is_which_file "tvservice") -o"
 					if is_opengl_legacy; then
 						tvservice -o
 					fi
 				elif is_which "xset"; then
-					file_add_line_rclocal_before_exit "xset dpms force off"
+					file_add_line_rclocal_before_exit "$(is_which_file "xset") dpms force off"
 					xset dpms force off
 				fi
 				if is_vcgencmd_working; then
-					file_add_line_rclocal_before_exit "vcgencmd display_power 0"
+					file_add_line_rclocal_before_exit "$(is_which_file "vcgencmd") display_power 0"
 					vcgencmd display_power 0
 				fi
 				;;

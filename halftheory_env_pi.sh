@@ -149,8 +149,7 @@ function is_opengl_legacy()
 function is_vcgencmd_working()
 {
 	local STR_TEST="$(get_os_version_id)"
-	#if is_which "vcgencmd" && is_int "$STR_TEST" && (($STR_TEST < 11)); then
-	if is_which "vcgencmd"; then
+	if is_which "vcgencmd" && is_int "$STR_TEST" && (($STR_TEST < 11)); then
 		return 0
 	fi
 	return 1
