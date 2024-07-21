@@ -738,10 +738,12 @@ function get_filename()
 function get_hostname()
 {
 	local STR_TEST="localhost"
-	if [ -e "/etc/hostname" ]; then
-		read -r STR_TEST < /etc/hostname
-	elif [ -n "$HOSTNAME" ]; then
+	if [ -n "$HOSTNAME" ]; then
 		STR_TEST="$HOSTNAME"
+	elif is_which "hostname"; then
+		STR_TEST="$(hostname)"
+	elif [ -e "/etc/hostname" ]; then
+		read -r STR_TEST < /etc/hostname
 	fi
 	echo "$(trim_space "$STR_TEST")"
 	return 0
