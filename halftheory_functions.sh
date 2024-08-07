@@ -143,6 +143,8 @@ function escape_brackets()
 	local STR_TEST="$*"
 	if [[ "$STR_TEST" = *\(* ]]; then
 		STR_TEST="${STR_TEST//\(/\\(}"
+	fi
+	if [[ "$STR_TEST" = *\)* ]]; then
 		STR_TEST="${STR_TEST//\)/\\)}"
 	fi
 	echo "$STR_TEST"
@@ -156,6 +158,29 @@ function escape_doublequotes()
 	if [[ "$STR_TEST" = *\"* ]]; then
 		STR_TEST="${STR_TEST//\"/\\\"}"
 	fi
+	echo "$STR_TEST"
+	return 0
+}
+
+function escape_perl()
+{
+	# STRING
+	local STR_TEST="$*"
+	# special cases
+	if [[ "$STR_TEST" = *\\* ]]; then
+		STR_TEST="${STR_TEST//\\/\\\\}"
+	fi
+	if [[ "$STR_TEST" = *\(* ]]; then
+		STR_TEST="${STR_TEST//\(/\\(}"
+	fi
+	# normal cases
+	local ARR_TEST=("/" "\"" ")" "^" "$" "@" "#" "&")
+	local STR=""
+	for STR in "${ARR_TEST[@]}"; do
+		if [[ "$STR_TEST" = *$STR* ]]; then
+			STR_TEST="${STR_TEST//$STR/\\${STR}}"
+		fi
+	done
 	echo "$STR_TEST"
 	return 0
 }
@@ -360,7 +385,7 @@ function file_replace_line()
 	if [ $5 ]; then
 		STR_BACKUP=" -i.bak"
 	fi
-	${STR_SUDO}perl -0777 -pi${STR_BACKUP} -e "s/^$(escape_slashes "$2")$/$(escape_slashes "$3")/mg" "$1"
+	${STR_SUDO}perl -0777 -pi${STR_BACKUP} -e "s/^$(escape_perl "$2")$/$(escape_perl "$3")/mg" "$1"
 	if [ $BOOL_REGEX = true ]; then
 		if [ "$FILESIZE" = "$(get_file_size "$1")" ]; then
 			return 1
@@ -394,7 +419,7 @@ function file_replace_line_first()
 	if [ $5 ]; then
 		STR_BACKUP=" -i.bak"
 	fi
-	${STR_SUDO}perl -0777 -pi${STR_BACKUP} -e "s/^$(escape_slashes "$2")$/$(escape_slashes "$3")/m" "$1"
+	${STR_SUDO}perl -0777 -pi${STR_BACKUP} -e "s/^$(escape_perl "$2")$/$(escape_perl "$3")/m" "$1"
 	if [ $BOOL_REGEX = true ]; then
 		if [ "$FILESIZE" = "$(get_file_size "$1")" ]; then
 			return 1
@@ -432,7 +457,7 @@ function file_replace_line_last()
 	if [ ! -e "$1.bak" ]; then
 		return 1
 	fi
-	cat "$1.bak" | ${STR_SUDO}perl -pne "s/^$(escape_slashes "$2")$/$(escape_slashes "$3")/mg if $. == $INT_LINENUM" > "$1"
+	cat "$1.bak" | ${STR_SUDO}perl -pne "s/^$(escape_perl "$2")$/$(escape_perl "$3")/mg if $. == $INT_LINENUM" > "$1"
 	if [ "$(get_file_size "$1")" = "0" ]; then
 		${STR_SUDO}cp -f "$1.bak" "$1"
 	fi
@@ -825,7 +850,7 @@ function get_pidof()
 		STR_TEST="$(pidof "$1" | awk '{print $1}')"
 	fi
 	if [ "$STR_TEST" = "" ]; then
-		STR_TEST="$(ps -A | grep "$1" | grep -v "grep $1" | awk '{print $1}')"
+		STR_TEST="$(ps -A | grep "$1" | grep -v "grep $1" | awk 'NR==1{print $1}')"
 	fi
 	if ! is_int "$STR_TEST"; then
 		return 1
