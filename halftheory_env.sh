@@ -142,9 +142,7 @@ function file_add_line_env_prompt()
 			;;
 		dir)
 			if [ ! -d "$STR_VALUE" ]; then
-				read -p "> Create directory? $STR_VALUE [y]: " PROMPT_TEST
-				PROMPT_TEST="${PROMPT_TEST:-y}"
-				if [ "$PROMPT_TEST" = "y" ]; then
+				if prompt "Create directory: $STR_VALUE "; then
 					mkdir -p "$STR_VALUE"
 					chmod $CHMOD_DIR "$STR_VALUE"
 				fi
@@ -152,9 +150,7 @@ function file_add_line_env_prompt()
 			;;
 		file)
 			if [ ! -f "$STR_VALUE" ]; then
-				read -p "> Create file? $STR_VALUE [y]: " PROMPT_TEST
-				PROMPT_TEST="${PROMPT_TEST:-y}"
-				if [ "$PROMPT_TEST" = "y" ]; then
+				if prompt "Create file: $STR_VALUE "; then
 					touch "$STR_VALUE"
 					chmod $CHMOD_FILE "$STR_VALUE"
 				fi

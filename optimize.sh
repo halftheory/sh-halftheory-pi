@@ -47,31 +47,12 @@ if [ $1 ] && [ "$1" = "force" ]; then
 	BOOL_FORCE=true
 fi
 
-# functions
-function prompt()
-{
-	if [ -z "$1" ]; then
-		return 1
-	fi
-	if [ $BOOL_FORCE = true ]; then
-		echo "> $1? YES"
-		return 0
-	fi
-	local PROMPT_TEST=""
-	read -p "> $1? [y]: " PROMPT_TEST
-	PROMPT_TEST="${PROMPT_TEST:-y}"
-	if [ ! "$PROMPT_TEST" = "y" ]; then
-		return 1
-	fi
-	return 0
-}
-
-if prompt "Set all passwords to 'pi'"; then
+if prompt "Set all passwords to 'pi'" $BOOL_FORCE; then
 	echo -ne "pi\npi\n" | ${MAYBE_SUDO}passwd root
 	echo -ne "pi\npi\n" | ${MAYBE_SUDO}passwd $OWN_LOCAL
 fi
 
-if prompt "Enable SSH login over USB"; then
+if prompt "Enable SSH login over USB" $BOOL_FORCE; then
 	if file_add_line_config_after_all "dtoverlay=dwc2"; then
 		echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
 	fi
@@ -81,7 +62,7 @@ if prompt "Enable SSH login over USB"; then
 fi
 
 STR_TEST="en_US.UTF-8"
-if prompt "Set locale to $STR_TEST"; then
+if prompt "Set locale to $STR_TEST" $BOOL_FORCE; then
 	if [ ! "$(locale 2>&1 | grep -v $STR_TEST)" = "" ]; then
 		export LANG=$STR_TEST
 		export LANGUAGE=$STR_TEST
@@ -91,7 +72,7 @@ if prompt "Set locale to $STR_TEST"; then
 	fi
 fi
 
-if prompt "Perform apt-get upgrades"; then
+if prompt "Perform apt-get upgrades" $BOOL_FORCE; then
 	if check_remote_host "archive.raspberrypi.org"; then
 		${MAYBE_SUDO}apt-get -y clean
 		${MAYBE_SUDO}apt-get -y update
@@ -100,7 +81,7 @@ if prompt "Perform apt-get upgrades"; then
 	fi
 fi
 
-if prompt "Disable/remove unneeded built-in services"; then
+if prompt "Disable/remove unneeded built-in services" $BOOL_FORCE; then
 	ARR_TEST=(
 		"apt-daily"
 		"apt-daily-upgrade"
@@ -129,7 +110,7 @@ if prompt "Disable/remove unneeded built-in services"; then
 	${MAYBE_SUDO}systemctl disable apt-daily-upgrade.timer
 fi
 
-if prompt "Reduce bash/tmux buffer"; then
+if prompt "Reduce bash/tmux buffer" $BOOL_FORCE; then
 	FILE_TEST="$(get_shell_env_file)"
 	ARR_TEST=(
 		"HISTSIZE=500"
@@ -172,7 +153,7 @@ if prompt "Reduce bash/tmux buffer"; then
 	fi
 fi
 
-if prompt "Disable logging"; then
+if prompt "Disable logging" $BOOL_FORCE; then
 	FILE_TEST="/etc/rsyslog.conf"
 	if [ -e "$FILE_TEST" ]; then
 		if ! file_contains_line "$FILE_TEST" "*.*\t\t~" && [ "$(grep -e "\*\.\*\t\t~" "$FILE_TEST")" = "" ] && [ "$(grep -e "\*\.\*\s\s~" "$FILE_TEST")" = "" ]; then
@@ -221,7 +202,7 @@ if prompt "Disable logging"; then
 	fi
 fi
 
-if prompt "Disable man indexing"; then
+if prompt "Disable man indexing" $BOOL_FORCE; then
 	FILE_TEST="/etc/cron.daily/man-db"
 	if [ -e "$FILE_TEST" ]; then
 		if [ "$(grep -Pzo "\#\!\/bin\/sh\nexit 0" "$FILE_TEST" | xargs --null)" = "" ]; then
@@ -240,7 +221,7 @@ if prompt "Disable man indexing"; then
 	fi
 fi
 
-if prompt "tmpfs - Write to RAM instead of the local disk"; then
+if prompt "tmpfs - Write to RAM instead of the local disk" $BOOL_FORCE; then
 	FILE_TEST="/etc/fstab"
 	if [ -e "$FILE_TEST" ]; then
 		ARR_TEST=(
@@ -258,7 +239,7 @@ if prompt "tmpfs - Write to RAM instead of the local disk"; then
 	fi
 fi
 
-if prompt "Use all CPUs for compiling"; then
+if prompt "Use all CPUs for compiling" $BOOL_FORCE; then
 	if is_which "nproc"; then
 		INT_TEST="$(nproc)"
 		if [ ! "$INT_TEST" = "" ]; then
@@ -281,19 +262,19 @@ if prompt "Use all CPUs for compiling"; then
 	fi
 fi
 
-if prompt "Turn off temperature warning"; then
+if prompt "Turn off temperature warning" $BOOL_FORCE; then
 	if file_add_line_config_after_all "avoid_warnings=1"; then
 		echo "> Updated '$(basename "$PI_FILE_CONFIG")'."
 	fi
 fi
 
-if prompt "Turn off top raspberries"; then
+if prompt "Turn off top raspberries" $BOOL_FORCE; then
 	if file_add_string_cmdline "logo.nologo"; then
 		echo "> Updated '$(basename "$PI_FILE_CMDLINE")'."
 	fi
 fi
 
-if prompt "Improve Wi-Fi performance - Disable WLAN adaptor power management"; then
+if prompt "Improve Wi-Fi performance - Disable WLAN adaptor power management" $BOOL_FORCE; then
 	if is_which "iwconfig"; then
 		STR_TEST="$(ifconfig | grep wlan | awk '{print $1}')"
 		if [ ! "$STR_TEST" = "" ]; then
@@ -305,7 +286,7 @@ if prompt "Improve Wi-Fi performance - Disable WLAN adaptor power management"; t
 	fi
 fi
 
-if prompt "Turn off blinking cursor"; then
+if prompt "Turn off blinking cursor" $BOOL_FORCE; then
 	if [ -e "/sys/class/graphics/fbcon" ]; then
 		if file_add_line_rclocal_before_exit "echo 0 > /sys/class/graphics/fbcon/cursor_blink"; then
 			echo "> Updated '$(basename "$PI_FILE_RCLOCAL")'."
@@ -313,7 +294,7 @@ if prompt "Turn off blinking cursor"; then
 	fi
 fi
 
-if prompt "Delete system files"; then
+if prompt "Delete system files" $BOOL_FORCE; then
 	ARR_TEST=(
 		"/boot"
 		"/home"
@@ -324,7 +305,7 @@ if prompt "Delete system files"; then
 	done
 fi
 
-if prompt "Install samba"; then
+if prompt "Install samba" $BOOL_FORCE; then
 	BOOL_TEST=false
 	CMD_TEST="${MAYBE_SUDO}apt list --installed 2>&1 | grep \"samba/\""
 	CMD_TEST="$(eval "$CMD_TEST")"
@@ -363,7 +344,7 @@ if prompt "Install samba"; then
 	fi
 fi
 
-if prompt "Install usbmount"; then
+if prompt "Install usbmount" $BOOL_FORCE; then
 	BOOL_TEST=false
 	CMD_TEST="${MAYBE_SUDO}apt list --installed 2>&1 | grep \"usbmount/\""
 	CMD_TEST="$(eval "$CMD_TEST")"
@@ -414,7 +395,7 @@ if prompt "Install usbmount"; then
 	fi
 fi
 
-if prompt "Run raspi-config"; then
+if prompt "Run raspi-config" $BOOL_FORCE; then
 	${MAYBE_SUDO}raspi-config
 fi
 
