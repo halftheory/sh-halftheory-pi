@@ -53,9 +53,7 @@ fi
 
 # ssh
 FILE_TEST="$DIR_TEST/ssh"
-read -p "> Create file '$FILE_TEST'? [y]: " PROMPT_TEST
-PROMPT_TEST="${PROMPT_TEST:-y}"
-if [ "$PROMPT_TEST" = "y" ]; then
+if prompt "Create file '$FILE_TEST'"; then
 	${MAYBE_SUDO}rm -f "$FILE_TEST" > /dev/null 2>&1
 	${MAYBE_SUDO}touch "$FILE_TEST"
 	${MAYBE_SUDO}chmod $CHMOD_FILE "$FILE_TEST"
@@ -63,9 +61,7 @@ fi
 
 # userconf
 FILE_TEST="$DIR_TEST/userconf"
-read -p "> Create file '$FILE_TEST'? [y]: " PROMPT_TEST
-PROMPT_TEST="${PROMPT_TEST:-y}"
-if [ "$PROMPT_TEST" = "y" ]; then
+if prompt "Create file '$FILE_TEST'"; then
 	read -p "> User: " STR_USERCONF_USER
 	read -p "> Pass: " STR_USERCONF_PASS
 	if [ ! "$STR_USERCONF_USER" = "" ] && [ ! "$STR_USERCONF_PASS" = "" ]; then
@@ -81,9 +77,12 @@ fi
 
 # wpa_supplicant.conf
 FILE_TEST="$DIR_TEST/wpa_supplicant.conf"
-read -p "> Create file '$FILE_TEST'? [y]: " PROMPT_TEST
-PROMPT_TEST="${PROMPT_TEST:-y}"
-if [ "$PROMPT_TEST" = "y" ]; then
+if [ -f "/etc/wpa_supplicant/wpa_supplicant.conf" ]; then
+	if prompt "Update existing file '/etc/wpa_supplicant/wpa_supplicant.conf'"; then
+		FILE_TEST="/etc/wpa_supplicant/wpa_supplicant.conf"
+	fi
+fi
+if prompt "Create file '$FILE_TEST'"; then
 	read -p "> SSID: " STR_WPA_SSID
 	read -p "> Pass: " STR_WPA_PASS
 	if [ ! "$STR_WPA_SSID" = "" ]; then
@@ -107,14 +106,22 @@ if [ "$PROMPT_TEST" = "y" ]; then
 fi
 
 # config.txt, cmdline.txt
-read -p "> Enable SSH login over USB? [y]: " PROMPT_TEST
-PROMPT_TEST="${PROMPT_TEST:-y}"
-if [ "$PROMPT_TEST" = "y" ]; then
+if prompt "Enable SSH login over USB"; then
 	FILE_TEST="$DIR_TEST/config.txt"
+	if [ -f "/boot/firmware/config.txt" ]; then
+		if prompt "Update existing file '/boot/firmware/config.txt'"; then
+			FILE_TEST="/boot/firmware/config.txt"
+		fi
+	fi
 	if file_add_line_config_after_all "dtoverlay=dwc2" "$FILE_TEST"; then
 		echo "> Updated '$(basename "$FILE_TEST")'."
 	fi
 	FILE_TEST="$DIR_TEST/cmdline.txt"
+	if [ -f "/boot/firmware/cmdline.txt" ]; then
+		if prompt "Update existing file '/boot/firmware/cmdline.txt'"; then
+			FILE_TEST="/boot/firmware/cmdline.txt"
+		fi
+	fi
 	if file_add_string_cmdline "modules-load=dwc2,g_ether" "$FILE_TEST"; then
 		echo "> Updated '$(basename "$FILE_TEST")'."
 	fi

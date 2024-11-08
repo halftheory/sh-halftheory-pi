@@ -1265,6 +1265,27 @@ function maybe_tmux()
 	return 1
 }
 
+function prompt()
+{
+	# STRING [BOOL]
+	if [ -z "$1" ]; then
+		return 1
+	fi
+	if [ "$2" ]; then
+		if [ $2 = true ]; then
+			echo "> $1? YES"
+			return 0
+		fi
+	fi
+	local PROMPT_TEST=""
+	read -p "> $1? [y]: " PROMPT_TEST
+	PROMPT_TEST="${PROMPT_TEST:-y}"
+	if [ ! "$PROMPT_TEST" = "y" ]; then
+		return 1
+	fi
+	return 0
+}
+
 function quote_string_with_spaces()
 {
 	# STRING
@@ -1433,6 +1454,8 @@ function user_exists()
 		local CMD_TEST="$(grep -e "^$1:" /etc/passwd)"
 		if [ ! "$CMD_TEST" = "" ]; then
 			return 0
+		else
+			return 1
 		fi
 	fi
 	if [ "$(get_system)" = "Linux" ] && [ -d "/home/$1" ]; then

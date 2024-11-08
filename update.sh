@@ -16,9 +16,7 @@ fi
 
 # prompt
 if ! has_arg "$*" "-force"; then
-	read -p "> Continue update? [y]: " PROMPT_TEST
-	PROMPT_TEST="${PROMPT_TEST:-y}"
-	if [ ! "$PROMPT_TEST" = "y" ]; then
+	if ! prompt "Continue update"; then
 		exit 0
 	fi
 fi
