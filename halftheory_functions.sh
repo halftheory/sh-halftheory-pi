@@ -568,7 +568,7 @@ function get_file_list_csv()
 		if [ -d "$STR" ] && dir_has_files "$STR"; then
 			for STR2 in $(get_realpath "$STR")/*.*; do
 				if [ -e "$STR2" ] && [[ "$(basename "$STR2")" = *.* ]] && [ ! -d "$STR2" ]; then
-					ARR_FILES+=("$STR2")
+					ARR_FILES+=("$(quote_string_with_commas "$STR2")")
 					STR_TEST2=""
 				else
 					if [ "$STR_TEST2" = "" ]; then
@@ -577,14 +577,14 @@ function get_file_list_csv()
 						STR_TEST2="$STR_TEST2 $STR2"
 					fi
 					if [ -e "$STR_TEST2" ] && [[ "$(basename "$STR_TEST2")" = *.* ]] && [ ! -d "$STR_TEST2" ]; then
-						ARR_FILES+=("$STR_TEST2")
+						ARR_FILES+=("$(quote_string_with_commas "$STR_TEST2")")
 						STR_TEST2=""
 					fi
 				fi
 			done
 			STR_TEST=""
 		elif [ -e "$STR" ] && [[ "$(basename "$STR")" = *.* ]] && [ ! -d "$STR" ]; then
-			ARR_FILES+=("$(get_realpath "$STR")")
+			ARR_FILES+=("$(quote_string_with_commas "$(get_realpath "$STR")")")
 			STR_TEST=""
 		else
 			if [ "$STR_TEST" = "" ]; then
@@ -593,7 +593,7 @@ function get_file_list_csv()
 				STR_TEST="$STR_TEST $STR"
 			fi
 			if [ -e "$STR_TEST" ] && [[ "$(basename "$STR_TEST")" = *.* ]] && [ ! -d "$STR_TEST" ]; then
-				ARR_FILES+=("$(get_realpath "$STR_TEST")")
+				ARR_FILES+=("$(quote_string_with_commas "$(get_realpath "$STR_TEST")")")
 				STR_TEST=""
 			fi
 		fi
@@ -601,7 +601,7 @@ function get_file_list_csv()
 	if [ "$ARR_FILES" = "" ]; then
 		return 1
 	fi
-	# 4. convert array to csv
+	# 3. convert array to csv
 	local LIST=""
 	for STR in "${ARR_FILES[@]}"; do
 		if [ "$LIST" = "" ]; then
@@ -1282,6 +1282,17 @@ function prompt()
 	PROMPT_TEST="${PROMPT_TEST:-y}"
 	if [ ! "$PROMPT_TEST" = "y" ]; then
 		return 1
+	fi
+	return 0
+}
+
+function quote_string_with_commas()
+{
+	# STRING
+	if [[ "$*" = *,* ]]; then
+		echo "'$*'"
+	else
+		echo "$*"
 	fi
 	return 0
 }
